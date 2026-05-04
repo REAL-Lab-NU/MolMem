@@ -1,5 +1,9 @@
 # MolMem: Memory-Augmented Agentic Reinforcement Learning for Sample-Efficient Molecular Optimization
 
+[![Conference](https://img.shields.io/badge/ACL%202026-Main-b31b1b)](https://2026.aclweb.org/)
+
+> Official code for our **ACL 2026 (Main)** paper.
+
 ## Overview
 
 MolMem (**Mol**ecular optimization with **Mem**ory) is a multi-turn agentic reinforcement learning framework with a dual-memory system for sample-efficient molecular optimization. It iteratively refines a lead compound to improve molecular properties while preserving structural similarity to the original molecule under a limited oracle budget.
