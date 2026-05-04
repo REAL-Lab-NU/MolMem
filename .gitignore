@@ -1,0 +1,35 @@
+# macOS
+.DS_Store
+**/.DS_Store
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
+# Claude state
+.claude/
+
+# Virtual env
+.env
+.venv/
+venv/
+env/
+
+# Logs / checkpoints / runtime artifacts
+checkpoints/
+wandb/
+outputs/
+*.log
+
+# Large retrieval data (build locally per README)
+retriever_data/
+*.faiss
+*.index

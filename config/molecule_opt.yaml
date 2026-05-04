@@ -1,0 +1,140 @@
+# config/molecule_opt.yaml
+# This file defines the specific settings for running the molecule optimization task.
+# It typically inherits from base.yaml and overrides/adds specific parameters.
+
+defaults:
+  - base  # Inherit common settings
+
+# =============================================================================
+# Task configuration format (consistent with SFT task definition)
+# =============================================================================
+
+molecule_opt_task: "drd2+qed"                        # SFT format task definition (see rules below)
+molecule_opt_similarity_threshold: 0.4         # Similarity threshold: 0.4-0.8
+train_size: 128                                  # Training set size: 32, 64, 128, 256, 512
+
+number_of_gpus: 2
+
+system:
+  CUDA_VISIBLE_DEVICES: "${cuda_devices:${number_of_gpus}}"
+
+
+# -----------------------------------------------------------------------------
+# Task Naming Rules
+# -----------------------------------------------------------------------------
+# 
+# 1. Supported Properties:
+#    - qed     : QED (Drug-likeness) [INCREASE]
+#    - logp    : LogP (Lipophilicity) [INCREASE] 
+#    - sa      : SA score (Synthetic Accessibility) [DECREASE]
+#    - jnk3    : JNK3 inhibition [INCREASE]
+#    - drd2    : DRD2 inhibition [INCREASE]
+#
+# 2. Single-objective task format:
+#    molecule_opt_task: "qed"        # → "increase QED"
+#    molecule_opt_task: "logp"       # → "increase LogP" 
+#    molecule_opt_task: "sa"         # → "decrease SA score" (Note: Lower SA is better)
+#    molecule_opt_task: "jnk3"       # → "increase JNK3 inhibition"
+#
+# 3. Multi-objective task format:
+#    Use "+" to connect multiple properties, order doesn't matter, system will parse correctly
+#    
+#    Examples:
+#    molecule_opt_task: "qed+logp"              # → "increase QED and increase LogP"
+#    molecule_opt_task: "qed+logp+sa"           # → "increase QED, increase LogP and decrease SA score"
+#    molecule_opt_task: "sa+qed"                # → "decrease SA score and increase QED"
+
+
+# --- Experiment Naming ---
+trainer:
+  experiment_name: molmem-${train_size}-${molecule_opt_task}
+  project_name: molmem_experiments
+  total_training_steps: 100
+  save_freq: 20
+  # Save path configuration
+  default_local_dir: ./checkpoints/${trainer.project_name}/${trainer.experiment_name}
+  n_gpus_per_node: ${number_of_gpus}
+
+
+# --- Agent Behavior ---
+agent_proxy:
+  max_turn: 5            # Allow 5 modification attempts
+data:
+  train_file: "./data/${molecule_opt_task}/train/${molecule_opt_task}_train_${train_size}.parquet"
+  val_file: "./data/${molecule_opt_task}/val/${molecule_opt_task}_val_32.parquet"  
+  smiles_column: "smiles"                         # Column name in parquet with initial SMILES
+  max_prompt_length: 2048                      # Limit prompt length, reserve space for response
+
+# --- Environment State Manager Configuration ---
+es_manager:
+  train:
+    env_groups: 128        # Training environment groups (for rank-based GRPO grouping) - can override via CLI
+    group_size: 16        # Group size (rank-based GRPO compares rankings within groups)
+    env_configs:
+      tags: ["MoleculeOptimization"] 
+      n_groups: [128]      # Default 128 groups - can override via CLI to [${train_size}]
+  val:
+    env_groups: 32        # Validation environment groups
+    group_size: 1         # 1 sample per group in validation (deterministic validation)
+    env_configs:
+      tags: ["MoleculeOptimization"]
+      n_groups: [32]
+
+model_path: YOUR_MODEL_PATH  # Replace with path to your pretrained model
+
+# =============================================================================
+# Dual-Memory System Configuration (MolMem)
+# =============================================================================
+
+# Static Exemplar Memory (Retrieval-based cold-start grounding)
+static_exemplar_memory:
+  enabled: true
+  url: "http://127.0.0.1:8000/retrieve"
+  topk: 5
+  timeout: 5.0
+  trigger_mode: "on_stuck"  # "always", "on_stuck", "never"
+  similarity_threshold: 0.4
+
+# Evolving Skill Memory (Experience-based learning)
+evolving_skill_memory:
+  enabled: true
+  max_size: 10000
+  save_path: "${trainer.default_local_dir}/skill_memory.pkl"
+  min_score_delta: 0.01
+
+
+micro_batch_size_per_gpu: 2              # Reduced to 2 to lower GPU memory peak usage
+ppo_mini_batch_size: 32              # Keep at 32 to avoid affecting training stability
+
+rollout:
+  tensor_model_parallel_size: ${number_of_gpus}
+  max_model_len: 4096              # Match model's max position encoding length to avoid index errors
+  gpu_memory_utilization: 0.5     # Reduced to 50% to reserve more VRAM for training
+  
+  # === Sequence length configuration (for molecule optimization) ===
+  response_length: 400             # Single turn response length
+  max_num_batched_tokens: 4096     # Keep consistent with max_model_len
+  
+  # === Smart length handling configuration ===
+  enable_smart_truncation: true    # Enable smart truncation
+  enable_length_filtering: true    # Enable length filtering
+
+# --- Algorithm Configuration ---
+algorithm:
+  adv_estimator: gae    
+  
+  # === General PPO parameters ===
+  gamma: 0.99                # Default discount factor (fallback)
+  lam: 0.95                  # GAE lambda parameter
+
+actor_rollout_ref:
+  actor:
+    checkpoint:
+      contents: ['model', 'optimizer', 'extra']
+  rollout:
+    # === Filtering Configuration ===
+    filter_mode: two_stage
+    variance_filter_ratio: 0.5
+    variance_filter_type: std
+    score_filter_ratio: 0.75
+    tensor_model_parallel_size: ${number_of_gpus}
