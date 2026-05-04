@@ -1,8 +1,9 @@
 # MolMem: Memory-Augmented Agentic Reinforcement Learning for Sample-Efficient Molecular Optimization
 
-[![Conference](https://img.shields.io/badge/ACL%202026-Main-b31b1b)](https://2026.aclweb.org/)
+[![Conference](https://img.shields.io/badge/ACL%202026-Main-b31b1b)](https://arxiv.org/abs/2604.12237)
+[![arXiv](https://img.shields.io/badge/arXiv-2604.12237-b31b1b)](https://arxiv.org/abs/2604.12237)
 
-> Official code for our **ACL 2026 (Main)** paper.
+> Official code for our **ACL 2026 (Main)** paper. [[arXiv]](https://arxiv.org/abs/2604.12237) [[PDF]](https://arxiv.org/pdf/2604.12237)
 
 ## Overview
 
