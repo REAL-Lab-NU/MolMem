@@ -195,6 +195,21 @@ export AZURE_OPENAI_API_KEY=your_api_key
 export AZURE_OPENAI_ENDPOINT=your_endpoint
 ```
 
+## Citation
+
+If you find MolMem useful in your research, please cite:
+
+```bibtex
+@article{wang2026molmem,
+  title   = {MolMem: Memory-Augmented Agentic Reinforcement Learning for Sample-Efficient Molecular Optimization},
+  author  = {Wang, Ziqing and Wen, Yibo and Pandey, Abhishek and Liu, Han and Ding, Kaize},
+  journal = {arXiv preprint arXiv:2604.12237},
+  year    = {2026}
+}
+```
+
+> An updated BibTeX entry will be provided once the paper appears in the ACL Anthology.
+
 ## License
 
 This project is released for academic research purposes.
