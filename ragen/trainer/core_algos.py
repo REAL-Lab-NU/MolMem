@@ -117,8 +117,6 @@ def compute_rank_based_grpo_advantage(
         returns: (batch_size, seq_len) Computed returns
     """
     with torch.no_grad():
-        batch_size = token_level_rewards.shape[0]
-        
         # Compute cumulative rewards per trajectory
         cumulative_rewards = (token_level_rewards * response_mask).sum(dim=-1)  # (batch_size,)
         
@@ -261,8 +259,8 @@ def build_preference_pairs(
     group_ids: np.ndarray = None,
     mode: str = "both",  # "intra", "inter", or "both"
     inter_weight_cumulative: float = 0.5,  # Weight for cumulative vs best score in inter-trajectory
-    max_intra_pairs_per_trajectory: int = 6,  # 限制每个轨迹的intra pairs数量
-    max_inter_pairs_per_molecule: int = 20   # 限制每个分子的inter pairs数量
+    max_intra_pairs_per_trajectory: int = 6,
+    max_inter_pairs_per_molecule: int = 20,
 ):
     """
     Build preference pairs for LiPO-λ loss computation.
@@ -297,7 +295,7 @@ def build_preference_pairs(
             turn_rewards = token_level_rewards[batch_idx, turn_positions]
             
             if len(turn_positions) >= 2:
-                # 收集所有可能的pairs
+                # Collect all possible pairs.
                 trajectory_pairs = []
                 for i in range(len(turn_rewards)):
                     for j in range(i + 1, len(turn_rewards)):
@@ -305,13 +303,13 @@ def build_preference_pairs(
                             reward_diff = abs(turn_rewards[i].item() - turn_rewards[j].item())
                             trajectory_pairs.append((i, j, reward_diff))
                 
-                # 如果pairs太多，选择差异最大的pairs
+                # Keep the pairs with the largest reward gaps.
                 if len(trajectory_pairs) > max_intra_pairs_per_trajectory:
-                    # 按奖励差异排序，选择差异最大的pairs
+                    # Rank pairs by reward difference.
                     trajectory_pairs.sort(key=lambda x: x[2], reverse=True)
                     trajectory_pairs = trajectory_pairs[:max_intra_pairs_per_trajectory]
                 
-                # 创建preference pairs
+                # Create preference pairs.
                 for i, j, _ in trajectory_pairs:
                     if turn_rewards[i] > turn_rewards[j]:
                         better_idx, worse_idx = i, j
@@ -320,7 +318,7 @@ def build_preference_pairs(
                         better_idx, worse_idx = j, i
                         preference_direction = -1
                     
-                    preference_pairs.append((batch_idx, batch_idx, better_idx, worse_idx))  # 统一使用0-based索引
+                    preference_pairs.append((batch_idx, batch_idx, better_idx, worse_idx))
                     preference_labels.append(preference_direction)
                     preference_scores.append((turn_rewards[better_idx].item(), turn_rewards[worse_idx].item()))
     
@@ -368,13 +366,13 @@ def build_preference_pairs(
                             score_diff = abs(combined_score_i - combined_score_j)
                             group_pairs.append((i, j, score_diff, idx_i, idx_j, combined_score_i, combined_score_j))
                 
-                # 如果pairs太多，选择分数差异最大的pairs
+                # Keep the pairs with the largest score gaps.
                 if len(group_pairs) > max_inter_pairs_per_molecule:
-                    # 按分数差异排序，选择差异最大的pairs
+                    # Rank pairs by score difference.
                     group_pairs.sort(key=lambda x: x[2], reverse=True)
                     group_pairs = group_pairs[:max_inter_pairs_per_molecule]
                 
-                # 创建preference pairs
+                # Create preference pairs.
                 for i, j, score_diff, idx_i, idx_j, combined_score_i, combined_score_j in group_pairs:
                     if combined_score_i > combined_score_j:
                         better_idx, worse_idx = idx_i, idx_j
@@ -395,9 +393,9 @@ def build_preference_pairs(
         "labels": preference_labels,
         "scores": preference_scores,
         "device": device,
-        "batch_size": batch_size,  # 添加batch_size用于计算平均指标
-        "token_level_rewards": token_level_rewards,  # 添加这个用于intra-trajectory比较
-        "inter_weight_cumulative": inter_weight_cumulative  # 添加这个用于inter-trajectory loss计算
+        "batch_size": batch_size,
+        "token_level_rewards": token_level_rewards,
+        "inter_weight_cumulative": inter_weight_cumulative,
     }
 
 
@@ -413,7 +411,7 @@ def compute_lipo_lambda_loss(
     inter_weight: float = 1.0,
     use_lambda_weights: bool = True,
     intra_comparison_mode: str = "cumulative",  # "cumulative" or "stepwise"
-    best_molecule_scores: torch.Tensor = None  # 添加这个参数用于inter-trajectory计算
+    best_molecule_scores: torch.Tensor = None,
 ):
     """
     Compute LiPO-λ preference loss.
@@ -463,9 +461,9 @@ def compute_lipo_lambda_loss(
                     intra_groups[traj_key] = []
                 intra_groups[traj_key].append(pair_idx)
     
-    # 预计算intra-trajectory的累积implicit rewards以提高性能
+    # Precompute cumulative intra-trajectory implicit rewards.
     intra_cumulative_rewards = {}
-    # 预计算每个轨迹内所有turns的ranks (用于Lambda权重)
+    # Precompute turn ranks within each trajectory for Lambda weights.
     trajectory_ranks = {}
     
     if any(pair[2] != 0 or pair[3] != 0 for pair in preference_data["pairs"]):
@@ -475,15 +473,15 @@ def compute_lipo_lambda_loss(
                 turn_mask = token_rewards[traj_idx] != 0
                 turn_positions = turn_mask.nonzero(as_tuple=True)[0]
                 if len(turn_positions) > 0:
-                    # 预计算每个turn位置的累积reward
+                    # Precompute the cumulative reward at each turn.
                     cumulative_rewards = []
                     turn_implicit_rewards = []
                     for pos in turn_positions:
                         cum_reward = (implicit_rewards[traj_idx, :pos.item()+1] * response_mask[traj_idx, :pos.item()+1]).sum()
                         cumulative_rewards.append(cum_reward)
-                        # 收集turn-level implicit rewards用于排名
+                        # Collect turn-level implicit rewards for ranking.
                         if intra_comparison_mode == "stepwise":
-                            # 对于stepwise，我们需要turn span的implicit reward总和
+                            # Stepwise mode uses the implicit-reward sum over the turn span.
                             turn_start = turn_positions[len(turn_implicit_rewards) - 1].item() + 1 if len(turn_implicit_rewards) > 0 else 0
                             response_start = response_mask[traj_idx].nonzero(as_tuple=True)[0][0].item()
                             turn_start = max(turn_start, response_start)
@@ -492,12 +490,12 @@ def compute_lipo_lambda_loss(
                                          response_mask[traj_idx, turn_start:turn_end+1]).sum()
                             turn_implicit_rewards.append(turn_reward.item())
                         else:
-                            # 对于cumulative，直接使用累积值
+                            # Cumulative mode uses the cumulative value directly.
                             turn_implicit_rewards.append(cum_reward.item())
                     
                     intra_cumulative_rewards[traj_idx] = cumulative_rewards
                     
-                    # 计算基于implicit rewards的ranks (降序排列，rank 1 = 最高分)
+                    # Rank implicit rewards in descending order (rank 1 is best).
                     if len(turn_implicit_rewards) > 1:
                         sorted_indices = sorted(range(len(turn_implicit_rewards)), 
                                               key=lambda i: turn_implicit_rewards[i], reverse=True)
@@ -506,7 +504,7 @@ def compute_lipo_lambda_loss(
                             ranks[idx] = rank + 1  # 1-indexed ranks
                         trajectory_ranks[traj_idx] = ranks
                     else:
-                        trajectory_ranks[traj_idx] = [1]  # 单个turn的rank就是1
+                        trajectory_ranks[traj_idx] = [1]
     
     total_loss = 0.0
     intra_loss = 0.0
@@ -589,7 +587,7 @@ def compute_lipo_lambda_loss(
                     worse_score = trajectory_rewards[traj_idx]
             else:
                 # ORIGINAL: Cumulative comparison - compare cumulative implicit rewards
-                # 使用预计算的累积rewards
+                # Use the precomputed cumulative rewards.
                 if traj_idx in intra_cumulative_rewards and better_turn >= 0 and worse_turn >= 0:
                     cumulative_rewards = intra_cumulative_rewards[traj_idx]
                     if better_turn < len(cumulative_rewards) and worse_turn < len(cumulative_rewards):
@@ -600,7 +598,7 @@ def compute_lipo_lambda_loss(
                         better_score = trajectory_rewards[traj_idx]
                         worse_score = trajectory_rewards[traj_idx]
                 else:
-                    # Fallback：原始计算方法
+                    # Fall back to direct computation.
                     token_rewards = preference_data.get("token_level_rewards")
                     if token_rewards is not None:
                         turn_mask = token_rewards[traj_idx] != 0
@@ -733,13 +731,3 @@ def compute_lipo_lambda_loss(
     }
     
     return preference_loss, metrics
-
-
-# set up unittest
-if __name__ == "__main__":
-    token_level_rewards = torch.tensor([[0, 0, 0, 0, 1, 0, 0, 0, 0, 1]])
-    values = torch.tensor([[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]])
-    loss_mask = torch.ones(1, 10)
-    advantages, returns = compute_bi_level_gae_advantage_return(token_level_rewards, values, loss_mask, 1, 1, 0.95)
-    print(advantages)
-    print(returns)

@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "molmem-agent"
+version = "0.1.0"
+description = "Memory-augmented agentic RL for molecular optimization"
+readme = "README.md"
+requires-python = ">=3.10"
+dynamic = ["dependencies"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["ragen*", "retrieval*", "verl*"]
+
+[tool.setuptools.package-data]
+verl = ["version/version", "**/*.yaml", "**/*.md"]
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}

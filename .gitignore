@@ -13,6 +13,10 @@ __pycache__/
 *.egg-info/
 .pytest_cache/
 .mypy_cache/
+.ruff_cache/
+/tests/
+/third_party/
+/2026.acl-long.2024.pdf
 
 # Claude state
 .claude/
@@ -21,13 +25,15 @@ __pycache__/
 .env
 .venv/
 venv/
-env/
+/env/
 
 # Logs / checkpoints / runtime artifacts
 checkpoints/
 wandb/
 outputs/
+/logs/
 *.log
+/inference_results.json
 
 # Large retrieval data (build locally per README)
 retriever_data/

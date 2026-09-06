@@ -8,13 +8,10 @@ from itertools import zip_longest
 
 import torch
 import numpy as np
-from typing import List, Dict, Any, Optional, Union
-from dataclasses import dataclass
+from typing import List, Dict
 import re
 from verl import DataProto
-from verl.utils.dataset.rl_dataset import collate_fn
 from transformers import AutoTokenizer
-import hydra
 from ragen.utils import register_resolvers
 from ragen.env import REGISTERED_ENV_CONFIGS
 from tensordict import TensorDict
@@ -144,7 +141,6 @@ class ContextManager:
         prefix_lookup = {}
         prefixes = {}
         env_config_lookup = {}
-        env_config = {}
         for env_tag, env_config in self.config.custom_envs.items():
             if env_tag not in self.es_cfg.env_configs.tags:
                 continue
@@ -152,50 +148,25 @@ class ContextManager:
             self._check_env_installed(env_config.env_type)
             env_config_new = asdict(REGISTERED_ENV_CONFIGS[env_config.env_type]())
             
-            # Process all environments normally
             for k,v in env_config.items():
                 env_config_new[k] = v
             env_instruction = env_config_new.get("env_instruction", "")
-            
-            # Special handling for molecule optimization environment dynamic instruction generation
+
             if env_config.env_type == "molecule_opt":
                 from ragen.env.molecule_opt.property_utils import parse_task_config
-                
-                # Dynamically set similarity threshold
+
                 similarity_threshold = env_config_new.get("molecule_opt_similarity_threshold", 0.4)
                 if env_config_new.get("env_config"):
-                    env_config_new["env_config"]["initial_similarity_threshold"] = similarity_threshold  
                     env_config_new["env_config"]["final_similarity_threshold"] = similarity_threshold
-                
-                try:
-                    task_description, similarity_threshold_str = parse_task_config(env_config_new)
-                    
-                    # Check if OOD experiment is enabled
-                    ood_experiment = env_config_new.get("ood_experiment", False)
-                    ood_style = env_config_new.get("ood_style", "original")
-                    
-                    if ood_experiment and ood_style != "original":
-                        env_instruction = self._generate_ood_instruction(
-                            ood_style, task_description, similarity_threshold_str
-                        )
-                    else:
-                        # Original instruction
-                        env_instruction = (
-                            f"You are an expert medicinal chemist specializing in molecular optimization. "
-                            f"Your task is to modify the given molecule to {task_description} while keeping "
-                            f"structural changes as minimal as possible. The modified molecule should maintain "
-                            f"a structural similarity of at least {similarity_threshold_str} with the original molecule."
-                        )
-                except Exception as e:
-                    print(f"⚠️ Failed to parse molecule optimization task: {e}")
-                    # Fall back to default instruction
-                    env_instruction = (
-                        "You are an expert medicinal chemist specializing in molecular optimization. "
-                        "Your task is to modify the given molecule to optimize the target properties while "
-                        "keeping structural changes as minimal as possible. The modified molecule should maintain "
-                        "appropriate structural similarity with the original molecule."
-                    )
-            
+
+                task_description, similarity_threshold_str = parse_task_config(env_config_new)
+                env_instruction = (
+                    f"You are an expert medicinal chemist specializing in molecular optimization. "
+                    f"Your task is to modify the given molecule to {task_description} while keeping "
+                    f"structural changes as minimal as possible. The modified molecule should maintain "
+                    f"a structural similarity of at least {similarity_threshold_str} with the original molecule."
+                )
+
             if env_config_new.get("grid_vocab", False):
                 grid_vocab_str = "\nThe meaning of each symbol in the state is:\n" + ", ".join([f"{k}: {v}" for k, v in env_config_new["grid_vocab"].items()])
                 env_instruction += grid_vocab_str
@@ -224,117 +195,108 @@ class ContextManager:
         self.prefix_lookup = prefix_lookup
         self.env_config_lookup = env_config_lookup
 
-    def _generate_ood_instruction(self, ood_style: str, task_description: str, similarity_threshold_str: str) -> str:
-        """
-        Generate OOD instruction templates for testing model robustness
-        
-        Args:
-            ood_style: Style of OOD instruction ('casual', 'technical', 'creative', 'minimal', 'verbose')
-            task_description: Task description (e.g., "increase QED")
-            similarity_threshold_str: Similarity threshold as string
-            
-        Returns:
-            OOD instruction string
-        """
-        if ood_style == "casual":
-            return (
-                f"Hey! You're a chemist working on molecules. "
-                f"Take this molecule and make it better for {task_description}. "
-                f"Don't change it too much though - keep similarity above {similarity_threshold_str}. "
-                f"Just give me the modified SMILES string."
-            )
-        elif ood_style == "technical":
-            return (
-                f"OBJECTIVE: Perform molecular structure optimization targeting {task_description}. "
-                f"CONSTRAINTS: Maintain Tanimoto similarity coefficient ≥ {similarity_threshold_str}. "
-                f"METHOD: Apply systematic structural modifications using computational chemistry principles. "
-                f"OUTPUT: Optimized molecular structure in SMILES notation."
-            )
-        elif ood_style == "creative":
-            return (
-                f"Imagine you're designing the perfect molecule. "
-                f"Transform the given structure to {task_description} while keeping its molecular identity. "
-                f"Think creatively but stay within similarity bounds of {similarity_threshold_str}. "
-                f"What would your ideal molecule look like?"
-            )
-        elif ood_style == "minimal":
-            return (
-                f"Modify molecule: {task_description}. "
-                f"Similarity ≥ {similarity_threshold_str}."
-            )
-        elif ood_style == "verbose":
-            return (
-                f"You are an expert medicinal chemist with extensive experience in pharmaceutical research "
-                f"and computational drug design. Your current assignment involves the systematic optimization "
-                f"of molecular structures to {task_description}. Please carefully analyze the provided "
-                f"molecular structure and propose strategic modifications that will enhance the desired "
-                f"properties while maintaining structural integrity. It is absolutely critical that "
-                f"any proposed modifications preserve a molecular similarity of at least {similarity_threshold_str} "
-                f"when compared to the original structure using standard cheminformatics similarity metrics. "
-                f"Please consider the impact of your modifications on drug-like properties, synthetic "
-                f"accessibility, and potential off-target effects."
-            )
-        elif ood_style == "question_format":
-            return (
-                f"Given the following molecule, how would you modify it to {task_description}? "
-                f"Please ensure your modification maintains similarity ≥ {similarity_threshold_str}. "
-                f"What changes would you make?"
-            )
-        elif ood_style == "step_by_step":
-            return (
-                f"Step 1: Analyze the given molecule structure. "
-                f"Step 2: Identify modification sites to {task_description}. "
-                f"Step 3: Apply changes while ensuring similarity ≥ {similarity_threshold_str}. "
-                f"Step 4: Provide the optimized SMILES structure."
-            )
-        else:
-            # Fallback to original style
-            return (
-                f"You are an expert medicinal chemist specializing in molecular optimization. "
-                f"Your task is to modify the given molecule to {task_description} while keeping "
-                f"structural changes as minimal as possible. The modified molecule should maintain "
-                f"a structural similarity of at least {similarity_threshold_str} with the original molecule."
-            )
-
     def _smart_truncate_conversation(self, conversation_text: str, max_length: int) -> str:
         """
-        Smart truncation of conversation history, keeping system prompt and recent conversation turns
+        Keep the task instruction and the most recent complete dialogue turns.
+
+        ``get_lm_inputs`` builds an alternating system/user/assistant chat.  Dropping
+        individual chat-template chunks can leave an assistant response without its
+        user message (and also changes the odd/even role layout used by the response
+        mask).  Treat each user/assistant exchange as one indivisible unit instead.
+        When old exchanges are removed, copy the initial task instruction into the
+        oldest retained user message so that the model still sees the objective.
         """
-        # Try to split conversation by <|im_start|>
-        parts = conversation_text.split('<|im_start|>')
-        if len(parts) < 3:  # Need at least system, user, assistant
-            # If split fails, use simple truncation
-            tokens = self.tokenizer.encode(conversation_text)
-            if len(tokens) > max_length:
-                truncated_tokens = tokens[-max_length:]
-                return self.tokenizer.decode(truncated_tokens, skip_special_tokens=False)
+        if max_length <= 0:
+            raise ValueError("max_length must be positive")
+
+        def token_length(text: str) -> int:
+            return len(self.tokenizer.encode(text))
+
+        if token_length(conversation_text) <= max_length:
             return conversation_text
-        
-        # Keep system prompt (usually the first part)
-        system_part = '<|im_start|>' + parts[1] if len(parts) > 1 else ''
-        
-        # Keep conversation turns from back to front
-        remaining_parts = parts[2:]  # Skip system part
-        kept_parts = [system_part]
-        
-        # Keep from newest conversation backwards
-        for i in range(len(remaining_parts) - 1, -1, -1):
-            test_text = ''.join(kept_parts) + '<|im_start|>' + remaining_parts[i]
-            test_tokens = self.tokenizer.encode(test_text)
-            
-            if len(test_tokens) <= max_length:
-                kept_parts.insert(-1, '<|im_start|>' + remaining_parts[i])  # Insert after system
-            else:
+
+        role_pattern = re.compile(r"<\|im_start\|>(system|user|assistant)[^\n]*\n")
+        matches = list(role_pattern.finditer(conversation_text))
+        if len(matches) < 3:
+            tokens = self.tokenizer.encode(conversation_text)
+            return self.tokenizer.decode(tokens[-max_length:], skip_special_tokens=False)
+
+        leading_text = conversation_text[:matches[0].start()]
+        chunks = [
+            conversation_text[match.start():matches[i + 1].start()]
+            if i + 1 < len(matches)
+            else conversation_text[match.start():]
+            for i, match in enumerate(matches)
+        ]
+        roles = [match.group(1) for match in matches]
+
+        # The masks and chat template both rely on strict role alternation.
+        expected_roles = ["system"] + [
+            role
+            for _ in range((len(roles) - 1) // 2)
+            for role in ("user", "assistant")
+        ]
+        if roles != expected_roles:
+            tokens = self.tokenizer.encode(conversation_text)
+            return self.tokenizer.decode(tokens[-max_length:], skip_special_tokens=False)
+
+        system_part = leading_text + chunks[0]
+        exchanges = [
+            (chunks[i], chunks[i + 1])
+            for i in range(1, len(chunks), 2)
+        ]
+
+        def split_chunk(chunk: str):
+            header_match = role_pattern.match(chunk)
+            end = chunk.rfind("<|im_end|>")
+            if header_match is None or end < header_match.end():
+                return None
+            return chunk[:header_match.end()], chunk[header_match.end():end], chunk[end:]
+
+        task_parts = split_chunk(exchanges[0][0])
+        if task_parts is None:
+            tokens = self.tokenizer.encode(conversation_text)
+            return self.tokenizer.decode(tokens[-max_length:], skip_special_tokens=False)
+
+        # The first user message also contains the first state.  Only the text before
+        # "Turn 1" is the invariant task instruction that must survive truncation.
+        task_body = task_parts[1]
+        turn_start = re.search(r"\nTurn\s+\d+:\s*\n", task_body)
+        task_instruction = task_body[:turn_start.start()] if turn_start else task_body
+        task_instruction = task_instruction.rstrip()
+
+        def add_task_instruction(user_chunk: str) -> str:
+            user_parts = split_chunk(user_chunk)
+            if user_parts is None or not task_instruction:
+                return user_chunk
+            header, body, trailer = user_parts
+            return header + task_instruction + "\n\n" + body.lstrip() + trailer
+
+        def render(start: int) -> str:
+            selected = list(exchanges[start:])
+            if start > 0:
+                selected[0] = (add_task_instruction(selected[0][0]), selected[0][1])
+            return system_part + "".join(user + assistant for user, assistant in selected)
+
+        # The newest exchange includes the pending assistant generation prefix during
+        # rollout, so it is always retained.  Add older exchanges only as whole pairs.
+        newest_start = len(exchanges) - 1
+        result = render(newest_start)
+        for start in range(newest_start - 1, -1, -1):
+            candidate = render(start)
+            if token_length(candidate) > max_length:
                 break
-        
-        result = ''.join(kept_parts)
-        
-        # Ensure result is not too long
-        final_tokens = self.tokenizer.encode(result)
-        if len(final_tokens) > max_length:
-            truncated_tokens = final_tokens[:max_length]
-            result = self.tokenizer.decode(truncated_tokens, skip_special_tokens=False)
-        
+            result = candidate
+
+        if token_length(result) > max_length:
+            # This can only happen when the system prompt, task instruction and newest
+            # state alone exceed the configured prompt budget.  Keep their structure
+            # intact and fail explicitly instead of slicing off the generation suffix.
+            raise ValueError(
+                "max_prompt_length is too small to retain the system prompt, task "
+                "instruction, latest state, and assistant generation prefix"
+            )
+
         return result
 
     def _parse_response(self, response: str) -> List:
@@ -410,7 +372,7 @@ class ContextManager:
         normalized_acc_scores = normalized_acc_scores + penalty
 
         if len(group2index) < acc_scores.shape[0]: # the group size > 1
-            for group, index in group2index.items():
+            for _group, index in group2index.items():
                 normalized_acc_scores[index] = norm_func(normalized_acc_scores[index])
 
         score_tensor[:, -1] = normalized_acc_scores
@@ -468,14 +430,23 @@ class ContextManager:
         # === Smart sequence length handling ===
         enable_smart_truncation = getattr(self.config.actor_rollout_ref.rollout, 'enable_smart_truncation', True)
         max_allowed_length = self.config.actor_rollout_ref.rollout.max_model_len
-        max_prompt_length = getattr(self.config.data, 'max_prompt_length', max_allowed_length - 512)  # Reserve space for response
+        response_length = self.config.actor_rollout_ref.rollout.response_length
+        configured_prompt_length = getattr(
+            self.config.data, 'max_prompt_length', max_allowed_length - response_length
+        )
+        max_prompt_length = min(
+            configured_prompt_length,
+            max_allowed_length - response_length,
+        )
+        if max_prompt_length <= 0:
+            raise ValueError("response_length must be smaller than max_model_len")
         
         # Check if any sequence exceeds length limit
         seq_lengths = attention_mask.sum(dim=-1)
         max_actual_length = seq_lengths.max().item()
         
-        if max_actual_length > max_allowed_length and enable_smart_truncation:
-            print(f"[Sequence Length Warning] Detected over-long sequence: {max_actual_length} > {max_allowed_length}, performing smart truncation")
+        if max_actual_length > max_prompt_length and enable_smart_truncation:
+            print(f"[Sequence Length Warning] Detected over-long sequence: {max_actual_length} > {max_prompt_length}, performing smart truncation")
             
             # Smart truncation - keep system prompt and recent conversation turns
             truncated_texts = []
@@ -491,10 +462,10 @@ class ContextManager:
             inputs = self.tokenizer(truncated_texts, return_tensors="pt", padding=True, padding_side="left", truncation=True, max_length=max_prompt_length)
             input_ids, attention_mask = inputs.input_ids, inputs.attention_mask
             print(f"[Sequence Length Processing] Max length after truncation: {attention_mask.sum(dim=-1).max().item()}")
-        elif max_actual_length > max_allowed_length:
-            print(f"[Sequence Length Warning] Detected over-long sequence: {max_actual_length} > {max_allowed_length}, but smart truncation is disabled")
+        elif max_actual_length > max_prompt_length:
+            print(f"[Sequence Length Warning] Detected over-long sequence: {max_actual_length} > {max_prompt_length}, but smart truncation is disabled")
             # If smart truncation is disabled, use simple truncation to avoid crashes
-            inputs = self.tokenizer(llm_input_texts, return_tensors="pt", padding=True, padding_side="left", truncation=True, max_length=max_allowed_length)
+            inputs = self.tokenizer(llm_input_texts, return_tensors="pt", padding=True, padding_side="left", truncation=True, max_length=max_prompt_length)
             input_ids, attention_mask = inputs.input_ids, inputs.attention_mask
         
         position_ids = attention_mask.cumsum(dim=-1)
@@ -630,69 +601,3 @@ class ContextManager:
     def formulate_rollouts(self, env_outputs: List[Dict]) -> DataProto:
         llm_inputs = self.get_lm_inputs(env_outputs, prepare_for_update=True)
         return llm_inputs
-
-    
-
-
-
-@hydra.main(version_base = None, config_path = "../../config", config_name = "base")
-def main(config):
-    import json
-    tokenizer = AutoTokenizer.from_pretrained(config.actor_rollout_ref.model.path)
-    ctx_manager = ContextManager(config=config, tokenizer=tokenizer)
-    print("ctx_manager prefix", ctx_manager.prefix_lookup)
-    # batch_list = [
-    #     {
-    #         "env_ids": 0,
-    #         "chat_response": "<think><think></answer> 123. </think><answer> <answer> say | hi </answer></answer>",
-    #     },
-    #     {
-    #         "env_ids": 1,
-    #         "chat_response": "<think> 456. </think><answer> 789 </answer><think> 10123 </think><answer> 11111 </answer>",
-    #     }
-    # ]
-    # ctx_manager.action_sep_lookup = {
-    #     0: "|",
-    #     1: ";"
-    # }
-    # for item in batch_list:
-    #     item["responses"] = tokenizer.encode(item["chat_response"], return_tensors="pt",max_length=512, truncation=True,padding="max_length")[0]
-    # batch_dict = collate_fn(batch_list)
-    # batch = DataProto.from_single_dict(batch_dict)
-    # env_inputs = ctx_manager.get_env_inputs(batch)
-    # print(env_inputs)
-    
-
-
-    env_outputs = [
-        {
-            "env_id": 1,
-            "history": [
-                {"state": "###\n#x_#<image>", "llm_response": "Response 1", "reward": 0.5, "actions_left": 2},
-                {"state": "###\n#x_#<image>", "llm_response": "Response 2", "reward": 0.8, "actions_left": 1},
-                {"state": "###\n#x_#<image>", "actions_left": 0}
-            ],
-            "group_id": 0,
-            "metrics": {}
-        },
-        {
-            "env_id": 2,
-            "history": [
-                {"state": "###\n#x_#<image>", "llm_response": "Response 3", "reward": 0.3, "actions_left": 1},
-                {"state": "###\n#x_#<image>", "actions_left": 0}
-            ],
-            "group_id": 1,
-            "metrics": {}
-        }
-    ]
-    
-    prefix_lookup = {1: "Initial prompt", 2: "Initial prompt 2"}
-    tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen2.5-0.5B-Instruct")
-    env_prompt = ctx_manager.get_lm_inputs(env_outputs, prepare_for_update=False)
-    print(env_prompt)
-    formulate_rollouts_rst= ctx_manager.formulate_rollouts(env_outputs)
-    print(formulate_rollouts_rst)
-
-if __name__ == "__main__":
-    main()
-    

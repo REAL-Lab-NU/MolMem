@@ -15,34 +15,160 @@ This module provides:
 """
 
 import json
+import hashlib
 import logging
+import math
 import os
+import re
 import shutil
 import tempfile
 import threading
 import uuid
 from collections import defaultdict
 from dataclasses import dataclass, field, asdict
-from typing import Dict, List, Optional, Set, Tuple
+from functools import lru_cache
+from typing import Any, Dict, List, Optional, Set, Tuple
 import numpy as np
 import pickle
 
 from rdkit import Chem
-from rdkit.Chem import Fragments, DataStructs, Descriptors, rdMolDescriptors, rdFMCS
+from rdkit.Chem import (
+    Fragments,
+    DataStructs,
+    Descriptors,
+    rdFingerprintGenerator,
+    rdMolDescriptors,
+    rdFMCS,
+)
 from rdkit.Chem.rdMolDescriptors import GetMorganFingerprintAsBitVect
 from rdkit.Chem.Scaffolds.MurckoScaffold import GetScaffoldForMol, MakeScaffoldGeneric
 
 logger = logging.getLogger(__name__)
 
 
+_ACTION_FINGERPRINT_GENERATOR = rdFingerprintGenerator.GetMorganGenerator(
+    radius=2,
+    includeChirality=True,
+)
+
+MIN_SKILL_TRANSITION_SIMILARITY = 0.4
+
+
+def _evidence_slug(value: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "_", value.lower()).strip("_") or "item"
+
+
+def skill_transition_rejection_reason(
+    before_smiles: str,
+    after_smiles: str,
+    score_before: float,
+    score_after: float,
+    score_delta: Optional[float] = None,
+    objective_deltas: Optional[Dict[str, float]] = None,
+) -> Optional[str]:
+    """Return why a transition is unsuitable for skill memory, if any."""
+    molecules = {}
+    for label, smiles in (("before", before_smiles), ("after", after_smiles)):
+        if not isinstance(smiles, str) or not smiles.strip():
+            return f"missing {label} SMILES"
+        try:
+            mol = Chem.MolFromSmiles(smiles, sanitize=False)
+            if mol is None:
+                return f"invalid {label} SMILES"
+            Chem.SanitizeMol(mol)
+        except Exception:
+            return f"unsanitizable {label} SMILES"
+        if len(Chem.GetMolFrags(mol)) != 1:
+            return f"disconnected {label} molecule"
+        if any(atom.GetAtomicNum() == 0 for atom in mol.GetAtoms()):
+            return f"dummy atom in {label} molecule"
+        if any(atom.GetNumRadicalElectrons() > 0 for atom in mol.GetAtoms()):
+            return f"radical in {label} molecule"
+        molecules[label] = mol
+
+    before_canonical = Chem.MolToSmiles(
+        molecules["before"], canonical=True, isomericSmiles=True
+    )
+    after_canonical = Chem.MolToSmiles(
+        molecules["after"], canonical=True, isomericSmiles=True
+    )
+    if before_canonical == after_canonical:
+        return "unchanged canonical molecule"
+
+    numeric_values = [score_before, score_after]
+    if score_delta is not None:
+        numeric_values.append(score_delta)
+    if objective_deltas is not None:
+        if not isinstance(objective_deltas, dict):
+            return "invalid objective deltas"
+        numeric_values.extend(objective_deltas.values())
+    try:
+        if not all(math.isfinite(float(value)) for value in numeric_values):
+            return "non-finite score or objective delta"
+    except (TypeError, ValueError):
+        return "invalid score or objective delta"
+
+    before_fp = GetMorganFingerprintAsBitVect(
+        molecules["before"], 2, nBits=2048
+    )
+    after_fp = GetMorganFingerprintAsBitVect(
+        molecules["after"], 2, nBits=2048
+    )
+    similarity = DataStructs.TanimotoSimilarity(before_fp, after_fp)
+    if similarity < MIN_SKILL_TRANSITION_SIMILARITY:
+        return (
+            f"before/after similarity {similarity:.3f} is below "
+            f"{MIN_SKILL_TRANSITION_SIMILARITY:.3f}"
+        )
+    return None
+
+
+@lru_cache(maxsize=32768)
+def structural_action_signature(
+    before_smiles: str,
+    after_smiles: str,
+) -> Optional[Tuple[Tuple[int, int], ...]]:
+    """Return a graph-only signature for soft grouping of structural edits.
+
+    The signed sparse ECFP4 count difference captures the local environments
+    removed from and added to the molecule. Objective/descriptor deltas, GPT
+    output and objective values are deliberately excluded. This signature is
+    only a retrieval-diversity key; storage identity remains the exact
+    canonical before/after pair.
+    """
+    before = Chem.MolFromSmiles(before_smiles)
+    after = Chem.MolFromSmiles(after_smiles)
+    if before is None or after is None:
+        return None
+
+    try:
+        before_counts = _ACTION_FINGERPRINT_GENERATOR.GetSparseCountFingerprint(
+            before
+        ).GetNonzeroElements()
+        after_counts = _ACTION_FINGERPRINT_GENERATOR.GetSparseCountFingerprint(
+            after
+        ).GetNonzeroElements()
+    except Exception:
+        return None
+
+    feature_ids = set(before_counts) | set(after_counts)
+    signature = tuple(sorted(
+        (
+            int(feature_id),
+            int(after_counts.get(feature_id, 0) - before_counts.get(feature_id, 0)),
+        )
+        for feature_id in feature_ids
+        if after_counts.get(feature_id, 0) != before_counts.get(feature_id, 0)
+    ))
+    return signature or None
+
+
 # ============================================================
 # RDKit Name Mapping (for GPT prompt clarity)
 # ============================================================
 
-# Map RDKit fragment names to human-readable chemical descriptions
-# This prevents GPT from misinterpreting technical names like "para_hydroxylation"
 RDKIT_NAME_MAP = {
-    "para_hydroxylation": "Para-substituted Aniline Pattern",
+    "para_hydroxylation": "Para-Hydroxylation Site",
     "Al_COO": "Aliphatic Carboxylic Acid",
     "Ar_N": "Aromatic Nitrogen",
     "C_O_noCOO": "Ketone/Aldehyde Carbonyl",
@@ -71,22 +197,6 @@ RDKIT_NAME_MAP = {
 def map_fg_name(name: str) -> str:
     """Map RDKit fragment name to human-readable description."""
     return RDKIT_NAME_MAP.get(name, name)
-
-
-def clean_fragment_string(frag_str: str) -> str:
-    """Clean up fragmented atom soup from MCS extraction failures.
-
-    If the fragment string is just a comma-separated list of atoms without
-    proper structural information, replace it with a clearer message.
-    """
-    if not frag_str:
-        return ""
-    # If comma count > 3 and no ring/bond markers, it's atom soup
-    # Use > 3 instead of > 2 to avoid false positives on small valid fragments
-    has_structure = any(m in frag_str for m in ['(', ')', '=', '#', '-', '[', ']'])
-    if frag_str.count(',') > 3 and not has_structure:
-        return "Complex Substructure (Refer to SMILES)"
-    return frag_str
 
 
 # ============================================================
@@ -149,12 +259,10 @@ class FunctionalGroupPruner:
         to_remove = set()
 
         for tag in tag_set:
-            # Check hierarchy map
             if tag in cls.HIERARCHY_MAP:
                 children = cls.HIERARCHY_MAP[tag]
                 to_remove.update(child for child in children if child in tag_set)
 
-            # Check generic redundancy
             if tag in cls.GENERIC_REDUNDANCY:
                 children = cls.GENERIC_REDUNDANCY[tag]
                 to_remove.update(child for child in children if child in tag_set)
@@ -283,7 +391,6 @@ def detect_functional_groups(smiles: str) -> Dict[str, int]:
 
     detected = {}
 
-    # 1. RDKit built-in fragment detection
     for name, func in RDKIT_FRAGMENT_FUNCS:
         try:
             count = func(mol)
@@ -292,7 +399,6 @@ def detect_functional_groups(smiles: str) -> Dict[str, int]:
         except Exception:
             continue
 
-    # 2. Custom SMARTS patterns
     for name, smarts in CUSTOM_SMARTS_PATTERNS.items():
         try:
             pattern = Chem.MolFromSmarts(smarts)
@@ -356,7 +462,6 @@ def extract_non_mcs_fragment(mol, match_indices: tuple) -> str:
     if not non_mcs_atoms:
         return ''
 
-    # Try to extract fragment using RWMol
     try:
         emol = Chem.RWMol(mol)
         atoms_to_remove = sorted(mcs_atoms, reverse=True)
@@ -373,7 +478,6 @@ def extract_non_mcs_fragment(mol, match_indices: tuple) -> str:
     except Exception:
         pass
 
-    # Fallback: return atom symbols
     atoms = [mol.GetAtomWithIdx(i).GetSymbol() for i in sorted(non_mcs_atoms)]
     return ','.join(atoms)
 
@@ -435,19 +539,15 @@ def analyze_mcs_changes(before_smiles: str, after_smiles: str) -> Dict:
 
     mcs_mol = Chem.MolFromSmarts(mcs_result.smartsString)
 
-    # Get matching atom indices
     match_before = mol_before.GetSubstructMatch(mcs_mol) if mcs_mol else ()
     match_after = mol_after.GetSubstructMatch(mcs_mol) if mcs_mol else ()
 
-    # Count non-MCS atoms
     non_mcs_before = mol_before.GetNumAtoms() - len(match_before)
     non_mcs_after = mol_after.GetNumAtoms() - len(match_after)
 
-    # Extract fragments
     removed_fragment = extract_non_mcs_fragment(mol_before, match_before)
     added_fragment = extract_non_mcs_fragment(mol_after, match_after)
 
-    # Determine modification type
     if non_mcs_before == 0 and non_mcs_after > 0:
         mod_type = 'addition'
     elif non_mcs_before > 0 and non_mcs_after == 0:
@@ -494,7 +594,6 @@ def analyze_scaffold_changes(before_smiles: str, after_smiles: str) -> Dict:
             'scaffold_type': 'invalid_smiles'
         }
 
-    # Extract Murcko scaffolds
     try:
         scaffold_before = GetScaffoldForMol(mol_before)
         scaffold_after = GetScaffoldForMol(mol_after)
@@ -513,7 +612,6 @@ def analyze_scaffold_changes(before_smiles: str, after_smiles: str) -> Dict:
 
     scaffold_changed = scaffold_before_smiles != scaffold_after_smiles
 
-    # Check generic scaffold (ignore heteroatom types)
     generic_same = False
     if scaffold_before and scaffold_after and scaffold_before.GetNumAtoms() > 0 and scaffold_after.GetNumAtoms() > 0:
         try:
@@ -523,13 +621,11 @@ def analyze_scaffold_changes(before_smiles: str, after_smiles: str) -> Dict:
         except Exception:
             generic_same = False
 
-    # Determine scaffold type
     if not scaffold_changed:
         scaffold_type = 'side_chain_mod'
     elif generic_same:
         scaffold_type = 'scaffold_hop'  # e.g., Benzene → Pyridine
     else:
-        # Compare ring counts
         rings_before = mol_before.GetRingInfo().NumRings()
         rings_after = mol_after.GetRingInfo().NumRings()
         if rings_after > rings_before:
@@ -561,7 +657,6 @@ def analyze_transformation(before_smiles: str, after_smiles: str) -> Dict:
     if mol_before is None or mol_after is None:
         return {}
 
-    # Atom count changes
     atom_counts_before = defaultdict(int)
     atom_counts_after = defaultdict(int)
 
@@ -577,23 +672,19 @@ def analyze_transformation(before_smiles: str, after_smiles: str) -> Dict:
         if change != 0:
             atom_changes[atom] = change
 
-    # Ring count changes
     ring_before = mol_before.GetRingInfo().NumRings()
     ring_after = mol_after.GetRingInfo().NumRings()
     ring_changes = ring_after - ring_before
 
-    # Molecular weight change
     mw_before = Descriptors.MolWt(mol_before)
     mw_after = Descriptors.MolWt(mol_after)
     mw_change = mw_after - mw_before
 
-    # PSA (Polar Surface Area) change
     try:
         psa_change = Descriptors.TPSA(mol_after) - Descriptors.TPSA(mol_before)
     except Exception:
         psa_change = 0.0
 
-    # H-bond donor/acceptor changes
     try:
         hbd_change = rdMolDescriptors.CalcNumHBD(mol_after) - rdMolDescriptors.CalcNumHBD(mol_before)
     except Exception:
@@ -604,13 +695,11 @@ def analyze_transformation(before_smiles: str, after_smiles: str) -> Dict:
     except Exception:
         hba_change = 0
 
-    # Rotatable bonds change
     try:
         rotatable_bonds_change = rdMolDescriptors.CalcNumRotatableBonds(mol_after) - rdMolDescriptors.CalcNumRotatableBonds(mol_before)
     except Exception:
         rotatable_bonds_change = 0
 
-    # Stereo centers change
     try:
         stereo_before = len(Chem.FindMolChiralCenters(mol_before, includeUnassigned=True))
         stereo_after = len(Chem.FindMolChiralCenters(mol_after, includeUnassigned=True))
@@ -618,15 +707,12 @@ def analyze_transformation(before_smiles: str, after_smiles: str) -> Dict:
     except Exception:
         stereo_centers_change = 0
 
-    # Functional group changes
     fg_diff = compute_fg_diff(before_smiles, after_smiles)
     fg_removed = [fg for fg, change in fg_diff.items() if change < 0]
     fg_added = [fg for fg, change in fg_diff.items() if change > 0]
 
-    # MCS analysis
     mcs_analysis = analyze_mcs_changes(before_smiles, after_smiles)
 
-    # Scaffold analysis
     scaffold_analysis = analyze_scaffold_changes(before_smiles, after_smiles)
 
     return {
@@ -641,12 +727,10 @@ def analyze_transformation(before_smiles: str, after_smiles: str) -> Dict:
         'fg_removed': fg_removed,
         'fg_added': fg_added,
         'fg_diff': fg_diff,
-        # MCS analysis fields
         'mcs_smarts': mcs_analysis.get('mcs_smarts', ''),
         'removed_fragment': mcs_analysis.get('removed_fragment', ''),
         'added_fragment': mcs_analysis.get('added_fragment', ''),
         'modification_type': mcs_analysis.get('modification_type', ''),
-        # Scaffold analysis fields
         'before_scaffold': scaffold_analysis.get('before_scaffold', ''),
         'after_scaffold': scaffold_analysis.get('after_scaffold', ''),
         'scaffold_changed': scaffold_analysis.get('scaffold_changed', False),
@@ -655,46 +739,40 @@ def analyze_transformation(before_smiles: str, after_smiles: str) -> Dict:
     }
 
 
-def aggregate_fg_statistics(experiences: List['SkillEntry']) -> Dict:
-    """
-    Aggregate functional group change statistics from experiences.
-
-    Args:
-        experiences: List of SkillEntry objects
-
-    Returns:
-        Dict mapping change patterns (e.g., "-amine_secondary", "+benzene") to stats
-    """
-    fg_changes = defaultdict(list)  # {pattern: [score_delta_list]}
-
-    for exp in experiences:
-        diff = compute_fg_diff(exp.before_smiles, exp.after_smiles)
-        for fg, change in diff.items():
-            pattern = f"-{fg}" if change < 0 else f"+{fg}"
-            fg_changes[pattern].append(exp.score_delta)
-
-    # Compute statistics
-    stats = {}
-    for pattern, deltas in fg_changes.items():
-        stats[pattern] = {
-            'count': len(deltas),
-            'avg_improvement': sum(deltas) / len(deltas) if deltas else 0,
-            'max_improvement': max(deltas) if deltas else 0,
-            'min_improvement': min(deltas) if deltas else 0,
-        }
-
-    return stats
-
-
 # ============================================================
 # Data Structures
 # ============================================================
+
+def classify_multi_objective_transition(
+    step_deltas: Dict[str, float],
+    directions: Dict[str, str],
+    min_delta: float = 0.1,
+) -> Tuple[bool, float, Dict[str, float]]:
+    """Accept a multi-objective step only when every objective improves.
+
+    Returned per-objective deltas are direction-normalized, so positive always
+    means improvement. Every objective must reach ``min_delta``; trade-offs and
+    unchanged objectives are discarded rather than stored as skills.
+    """
+    objective_deltas = {
+        name: (-float(value) if directions.get(name, 'maximize') == 'minimize' else float(value))
+        for name, value in step_deltas.items()
+    }
+    if not objective_deltas:
+        return False, 0.0, {}
+    if any(name not in objective_deltas for name in directions):
+        return False, 0.0, objective_deltas
+
+    accepted = all(value >= min_delta for value in objective_deltas.values())
+    aggregate_delta = sum(objective_deltas.values()) if accepted else 0.0
+    return accepted, aggregate_delta, objective_deltas
+
 
 @dataclass
 class SkillEntry:
     """Single skill entry for molecular optimization (Evolving Skill Memory)"""
     # Basic info
-    exp_id: str = field(default_factory=lambda: str(uuid.uuid4())[:8])
+    exp_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     task: str = ""  # e.g., "sa", "qed", "jnk3", "qed+logp"
     created_epoch: int = 0
 
@@ -707,7 +785,15 @@ class SkillEntry:
     score_before: float = 0.0
     score_after: float = 0.0
     score_delta: float = 0.0  # after - before
-    success: bool = False  # Whether optimization succeeded
+    # Positive deltas are direction-normalized improvements.
+    objective_deltas: Dict[str, float] = field(default_factory=dict)
+
+    @property
+    def improvement_delta(self) -> float:
+        """Observed improvement used for ranking and capacity control."""
+        if self.objective_deltas:
+            return sum(float(value) for value in self.objective_deltas.values())
+        return -float(self.score_delta) if self.task == 'sa' else float(self.score_delta)
 
     # Structural analysis (for GPT context)
     atom_changes: Dict[str, int] = field(default_factory=dict)  # {"C": -3, "N": +1}
@@ -734,8 +820,11 @@ class SkillEntry:
     is_scaffold_hop: bool = False     # True if bioisosteric replacement (e.g., Benzene→Pyridine)
     scaffold_type: str = ""           # 'side_chain_mod', 'scaffold_hop', 'ring_fusion', etc.
 
-    # GPT-generated summary (filled later)
+    # GPT-generated summary and its locally verified evidence binding.
     gpt_summary: Optional[str] = None
+    gpt_evidence_ids: List[str] = field(default_factory=list)
+    gpt_evidence_hash: str = ""
+    gpt_summary_plan: Dict[str, Any] = field(default_factory=dict)
 
     # Merge tracking fields
     occurrence_count: int = 1  # Number of times this experience pattern was observed
@@ -745,78 +834,50 @@ class SkillEntry:
     before_fingerprint: Optional[np.ndarray] = field(default=None, repr=False)
     functional_group_tags: Set[str] = field(default_factory=set)
 
-    # Usage tracking fields (SVS system)
-    retrieval_count: int = 0              # N_e: number of times retrieved
-    total_usage_delta: float = 0.0        # cumulative score change after usage
-    positive_usage_count: int = 0         # times with positive outcome
-    negative_usage_count: int = 0         # times with negative outcome
-    is_deprecated: bool = False           # soft delete flag
-    deprecated_reason: str = ""           # reason for deprecation
-
-    # Consolidation tracking fields
-    is_consolidated: bool = False         # has been merged into another experience
-    consolidated_into: str = ""           # exp_id of the consolidated experience
-    is_from_consolidation: bool = False   # whether created from consolidation
-    consolidated_from: List[str] = field(default_factory=list)  # source exp_ids
-
-    @property
-    def usage_count(self) -> int:
-        """Total usage count (with recorded outcomes)"""
-        return self.positive_usage_count + self.negative_usage_count
-
-    @property
-    def avg_usage_delta(self) -> float:
-        """Average outcome delta per usage"""
-        return self.total_usage_delta / self.usage_count if self.usage_count > 0 else 0.0
-
-    @property
-    def usage_success_rate(self) -> float:
-        """Success rate when used"""
-        return self.positive_usage_count / self.usage_count if self.usage_count > 0 else 0.0
-
     def to_dict(self) -> Dict:
         """Convert to JSON-serializable dict"""
         d = asdict(self)
-        # Convert numpy array to list
         if d['before_fingerprint'] is not None:
             d['before_fingerprint'] = d['before_fingerprint'].tolist()
-        # Convert set to list
         d['functional_group_tags'] = list(d['functional_group_tags'])
         return d
 
     def to_dict_for_json(self) -> Dict:
         """Convert to JSON-serializable dict without fingerprint (for human readability)"""
         d = self.to_dict()
-        # Remove fingerprint field to keep JSON readable
         d.pop('before_fingerprint', None)
         return d
 
     @classmethod
     def from_dict(cls, data: Dict) -> 'SkillEntry':
-        """Create from dict with validation and backward compatibility"""
-        # Validate required fields
+        """Create a validated skill entry from serialized data."""
+        if not isinstance(data, dict):
+            raise ValueError("SkillEntry payload must be a dictionary")
+        data = dict(data)
+        unknown_fields = sorted(set(data) - set(cls.__dataclass_fields__))
+        if unknown_fields:
+            raise ValueError(f"Unknown SkillEntry fields: {unknown_fields}")
+
         required_fields = ['before_smiles', 'after_smiles', 'task']
         missing = [f for f in required_fields if f not in data or data[f] is None]
         if missing:
             raise ValueError(f"Missing required fields: {missing}")
 
-        # Convert list back to numpy array
-        if data.get('before_fingerprint'):
-            data['before_fingerprint'] = np.array(data['before_fingerprint'])
-        # Convert list back to set
-        if data.get('functional_group_tags'):
-            data['functional_group_tags'] = set(data['functional_group_tags'])
+        if data.get('before_fingerprint') is not None:
+            data['before_fingerprint'] = np.asarray(data['before_fingerprint'])
+        data['functional_group_tags'] = set(
+            data.get('functional_group_tags') or []
+        )
 
-        # Backward compatibility: set defaults for new/optional fields
         data.setdefault('occurrence_count', 1)
         data.setdefault('merged_from', [])
-        data.setdefault('exp_id', str(uuid.uuid4())[:8])
+        data.setdefault('exp_id', str(uuid.uuid4()))
         data.setdefault('created_epoch', 0)
         data.setdefault('trajectory', [])
         data.setdefault('score_before', 0.0)
         data.setdefault('score_after', 0.0)
         data.setdefault('score_delta', 0.0)
-        data.setdefault('success', False)
+        data.setdefault('objective_deltas', {})
         data.setdefault('atom_changes', {})
         data.setdefault('ring_changes', 0)
         data.setdefault('mw_change', 0.0)
@@ -826,48 +887,34 @@ class SkillEntry:
         data.setdefault('rotatable_bonds_change', 0)
         data.setdefault('stereo_centers_change', 0)
 
-        # MCS analysis defaults
         data.setdefault('mcs_smarts', '')
         data.setdefault('removed_fragment', '')
         data.setdefault('added_fragment', '')
         data.setdefault('modification_type', '')
 
-        # Scaffold analysis defaults
         data.setdefault('before_scaffold', '')
         data.setdefault('after_scaffold', '')
         data.setdefault('scaffold_changed', False)
         data.setdefault('is_scaffold_hop', False)
         data.setdefault('scaffold_type', '')
 
-        # Type validation for new fields
         try:
             data['psa_change'] = float(data['psa_change'])
-        except (ValueError, TypeError):
-            data['psa_change'] = 0.0
-        for field in ['hbd_change', 'hba_change', 'rotatable_bonds_change', 'stereo_centers_change']:
+        except (ValueError, TypeError) as exc:
+            raise ValueError("Invalid numeric field: psa_change") from exc
+        for field_name in ['hbd_change', 'hba_change', 'rotatable_bonds_change', 'stereo_centers_change']:
             try:
-                data[field] = int(data[field])
-            except (ValueError, TypeError):
-                data[field] = 0
+                data[field_name] = int(data[field_name])
+            except (ValueError, TypeError) as exc:
+                raise ValueError(f"Invalid numeric field: {field_name}") from exc
         data.setdefault('functional_groups_removed', [])
         data.setdefault('functional_groups_added', [])
         data.setdefault('gpt_summary', None)
+        data.setdefault('gpt_evidence_ids', [])
+        data.setdefault('gpt_evidence_hash', '')
+        data.setdefault('gpt_summary_plan', {})
         data.setdefault('before_fingerprint', None)
         data.setdefault('functional_group_tags', set())
-
-        # SVS tracking fields defaults (for backward compatibility)
-        data.setdefault('retrieval_count', 0)
-        data.setdefault('total_usage_delta', 0.0)
-        data.setdefault('positive_usage_count', 0)
-        data.setdefault('negative_usage_count', 0)
-        data.setdefault('is_deprecated', False)
-        data.setdefault('deprecated_reason', '')
-
-        # Consolidation tracking fields defaults
-        data.setdefault('is_consolidated', False)
-        data.setdefault('consolidated_into', '')
-        data.setdefault('is_from_consolidation', False)
-        data.setdefault('consolidated_from', [])
 
         try:
             return cls(**data)
@@ -877,21 +924,89 @@ class SkillEntry:
 
     def compute_indices(self):
         """Compute fingerprint and FG tags for retrieval"""
-        # Compute Morgan fingerprint
+        self.before_fingerprint = None
+        self.functional_group_tags = set()
         mol = Chem.MolFromSmiles(self.before_smiles)
         if mol:
             fp = GetMorganFingerprintAsBitVect(mol, 2, nBits=2048)
             self.before_fingerprint = np.zeros(2048, dtype=np.int8)
             DataStructs.ConvertToNumpyArray(fp, self.before_fingerprint)
 
-        # Compute FG tags
         fg_before = detect_functional_groups(self.before_smiles)
-        fg_after = detect_functional_groups(self.after_smiles)
+        self.functional_group_tags = set(
+            FunctionalGroupPruner.prune(list(fg_before.keys()))
+        )
 
-        # Tags are the FGs that were present before or added/removed
-        # Apply pruning to remove redundant low-level tags
-        raw_tags = set(fg_before.keys()) | set(fg_after.keys())
-        self.functional_group_tags = set(FunctionalGroupPruner.prune(list(raw_tags)))
+
+@lru_cache(maxsize=32768)
+def _source_action_prerequisites(
+    change_ids: Tuple[str, ...],
+    atom_changes: Tuple[Tuple[str, int], ...],
+    ring_changes: int,
+) -> Tuple[frozenset, frozenset, bool]:
+    change_id_set = set(change_ids)
+    required_fg_ids = frozenset(
+        evidence_id.removeprefix("fg.removed.")
+        for evidence_id in change_id_set
+        if evidence_id.startswith("fg.removed.")
+    )
+    required_atoms = frozenset(
+        symbol
+        for symbol, delta in atom_changes
+        if delta < 0 and f"atoms.{_evidence_slug(symbol)}" in change_id_set
+    )
+    requires_ring = "rings.delta" in change_id_set and ring_changes < 0
+    return required_fg_ids, required_atoms, requires_ring
+
+
+def _query_action_profile(
+    query_functional_groups: Optional[Dict[str, int]],
+    query_mol: Optional[Chem.Mol],
+) -> Tuple[Optional[frozenset], Optional[frozenset], Optional[bool]]:
+    query_fg_ids = None
+    if query_functional_groups is not None:
+        query_fg_ids = frozenset(
+            _evidence_slug(name)
+            for name, count in query_functional_groups.items()
+            if count > 0
+        )
+    if query_mol is None:
+        return query_fg_ids, None, None
+    query_atoms = frozenset(atom.GetSymbol() for atom in query_mol.GetAtoms())
+    has_ring = query_mol.GetRingInfo().NumRings() > 0
+    return query_fg_ids, query_atoms, has_ring
+
+
+def _source_action_matches_profile(
+    exp: SkillEntry,
+    query_profile: Tuple[Optional[frozenset], Optional[frozenset], Optional[bool]],
+) -> bool:
+    change_ids = tuple(sorted(
+        (exp.gpt_summary_plan or {}).get("change_evidence_ids") or []
+    ))
+    atom_changes = []
+    for symbol, delta in (exp.atom_changes or {}).items():
+        try:
+            atom_changes.append((str(symbol), int(delta)))
+        except (TypeError, ValueError):
+            continue
+    try:
+        ring_changes = int(exp.ring_changes)
+    except (TypeError, ValueError):
+        ring_changes = 0
+    required_fg_ids, required_atoms, requires_ring = (
+        _source_action_prerequisites(
+            change_ids,
+            tuple(sorted(atom_changes)),
+            ring_changes,
+        )
+    )
+    query_fg_ids, query_atoms, has_ring = query_profile
+    return (
+        (query_fg_ids is None or required_fg_ids.issubset(query_fg_ids))
+        and (query_atoms is None or required_atoms.issubset(query_atoms))
+        and (has_ring is None or not requires_ring or has_ring)
+    )
 
 
 # ============================================================
@@ -905,131 +1020,180 @@ class EvolvingSkillMemory:
     This component distills successful optimization trajectories into reusable
     strategies that can be applied to future optimization tasks.
 
-    Supports three retrieval methods: by functional group, by similarity, by task.
+    Supports retrieval by functional group and molecular similarity.
     Thread-safe for concurrent access.
     """
 
     def __init__(self,
-                 max_size: int = 10000,
+                 max_size: int = 1000,
                  save_path: Optional[str] = None,
-                 include_failures: bool = True,
-                 min_score_delta: float = 0.01,
-                 max_pending_size: int = 1000,
-                 merge_enabled: bool = True,
-                 merge_by_smiles: bool = True,
-                 merge_by_fg_pattern: bool = True,
-                 read_only: bool = False,
-                 svs_config: Optional[Dict] = None):
+                 min_score_delta: float = 0.1,
+                 read_only: bool = False):
         """
         Args:
             max_size: Maximum number of experiences to store
-            save_path: Path to save/load the pool
-            include_failures: Whether to store failure experiences
+            save_path: Path to save/load the memory
             min_score_delta: Minimum score change to record
-            max_pending_size: Maximum pending experiences for GPT (prevents memory leak)
-            merge_enabled: Whether to merge duplicate experiences
-            merge_by_smiles: Merge experiences with identical SMILES pairs
-            merge_by_fg_pattern: Merge experiences with same FG change pattern
-            read_only: If True, pool only loads from file and doesn't save or add new experiences
-            svs_config: SVS (Skill Value Score) configuration dict with keys: w1, w2, c
+            read_only: If True, memory only loads from file and cannot be updated
         """
+        if max_size <= 0:
+            raise ValueError("Evolving Skill Memory max_size must be positive")
+        if min_score_delta <= 0:
+            raise ValueError("Evolving Skill Memory min_score_delta must be positive")
         self.max_size = max_size
         self.save_path = save_path
-        self.include_failures = include_failures
         self.min_score_delta = min_score_delta
-        self.max_pending_size = max_pending_size
         self.read_only = read_only
 
-        # Thread lock for concurrent access
-        self._lock = threading.Lock()
+        self._lock = threading.RLock()
+        # Serialize full saves so an older snapshot cannot overwrite a newer one.
+        self._save_lock = threading.Lock()
+        self._summary_generation_lock = threading.Lock()
 
-        # Task -> experiences mapping
         self.experiences: Dict[str, List[SkillEntry]] = defaultdict(list)
 
-        # Pending experiences waiting for GPT summary
-        self.pending_for_gpt: List[SkillEntry] = []
+        # Exact-pair deduplication is the only supported merge operation.
+        self._canonical_pair_index: Dict[Tuple[Tuple[str, ...], str, str], SkillEntry] = {}
 
-        # FG statistics cache (updated periodically)
-        self.fg_statistics: Dict[str, Dict] = {}
-
-        # Merge configuration
-        self.merge_enabled = merge_enabled
-        self.merge_by_smiles = merge_by_smiles
-        self.merge_by_fg_pattern = merge_by_fg_pattern
-
-        # SVS (Skill Value Score) configuration
-        self.svs_config = svs_config or {
-            'w1': 0.3,   # initial delta weight
-            'w2': 0.7,   # usage delta weight
-            'c': 0.5,    # exploration factor
-        }
-        self._total_retrieval_count = 0  # global retrieval counter
-
-        # Load existing if available
-        if save_path and os.path.exists(save_path):
+        _, pkl_path = self._storage_paths(save_path) if save_path else (None, None)
+        if pkl_path and os.path.exists(pkl_path):
             self.load()
         elif self.read_only and save_path:
-            logger.warning(f"[Experience Pool] Read-only mode but file not found: {save_path}")
+            logger.warning(f"Evolving Skill Memory file not found: {save_path}")
 
-    def _get_smiles_key(self, exp: SkillEntry) -> str:
-        """Generate unique key based on SMILES pair"""
-        return f"{exp.before_smiles}|{exp.after_smiles}"
+    @staticmethod
+    def _canonical_smiles(smiles: str) -> Optional[str]:
+        """Return stereochemistry-preserving canonical SMILES."""
+        mol = Chem.MolFromSmiles(smiles)
+        if mol is None:
+            return None
+        return Chem.MolToSmiles(mol, canonical=True, isomericSmiles=True)
 
-    def _get_fg_pattern_key(self, exp: SkillEntry) -> str:
-        """Generate unique key based on functional group change pattern"""
-        # Filter out empty strings and strip whitespace
-        removed = sorted([fg.strip() for fg in (exp.functional_groups_removed or []) if fg and fg.strip()])
-        added = sorted([fg.strip() for fg in (exp.functional_groups_added or []) if fg and fg.strip()])
-        return f"removed:{','.join(removed)}|added:{','.join(added)}"
+    def _get_smiles_key(
+        self, exp: SkillEntry
+    ) -> Optional[Tuple[Tuple[str, ...], str, str]]:
+        """Return an exact task + canonical before/after transformation key."""
+        before = self._canonical_smiles(exp.before_smiles)
+        after = self._canonical_smiles(exp.after_smiles)
+        if before is None or after is None:
+            return None
+        return self._task_signature(exp.task), before, after
+
+    @staticmethod
+    def _task_signature(task: str) -> Tuple[str, ...]:
+        """Return an order-independent signature for a task expression."""
+        return tuple(sorted(part.strip() for part in task.split('+') if part.strip()))
+
+    @staticmethod
+    def select_distinct_actions(
+        experiences: List[SkillEntry],
+        top_k: int,
+    ) -> List[SkillEntry]:
+        """Keep the first ranked representative of each structural action.
+
+        An unavailable signature fails open by using the experience ID, so an
+        analysis failure can reduce diversity but can never collapse unrelated
+        experiences.
+        """
+        if top_k <= 0:
+            return []
+
+        selected = []
+        seen_actions = set()
+        for exp in experiences:
+            signature = structural_action_signature(
+                exp.before_smiles,
+                exp.after_smiles,
+            )
+            action_key = (
+                ("action", signature)
+                if signature is not None
+                else ("experience", exp.exp_id)
+            )
+            if action_key in seen_actions:
+                continue
+            seen_actions.add(action_key)
+            selected.append(exp)
+            if len(selected) == top_k:
+                break
+        return selected
+
+    def _experiences_for_task(self, task: str) -> List[SkillEntry]:
+        signature = self._task_signature(task)
+        return [
+            exp
+            for stored_task, experiences in self.experiences.items()
+            if self._task_signature(stored_task) == signature
+            for exp in experiences
+        ]
+
+    def has_task(self, task: str) -> bool:
+        """Return whether validated retrievable memory exists for the task."""
+        return any(
+            self._is_retrievable(exp)
+            for exp in self._experiences_for_task(task)
+        )
 
     def _merge_experience(self, existing: SkillEntry, new: SkillEntry) -> bool:
         """
-        Merge two experiences, keeping the one with best score_delta.
+        Merge an exact canonical pair, keeping the strongest normalized gain.
 
         Args:
-            existing: The experience already in the pool
+            existing: The skill already in memory
             new: The new experience to merge
 
         Returns:
             True (always succeeds)
         """
-        existing.occurrence_count += 1
-        existing.merged_from.append(new.exp_id)
+        existing.occurrence_count += max(1, int(new.occurrence_count))
+        existing.merged_from.extend([new.exp_id, *new.merged_from])
 
-        # Limit merged_from list size to prevent memory growth
         if len(existing.merged_from) > 100:
             existing.merged_from = existing.merged_from[-100:]
 
-        # Determine if new experience is better (task-aware comparison)
-        # For SA task: smaller delta is better (we want to decrease score)
-        # For others: larger delta is better (we want to increase score)
-        is_better = False
-        if existing.task == 'sa':
-            # SA: more negative delta = better improvement
-            is_better = new.score_delta < existing.score_delta
-        else:
-            # Other tasks: more positive delta = better improvement
-            is_better = new.score_delta > existing.score_delta
+        is_better = new.improvement_delta > existing.improvement_delta
 
         if is_better:
-            existing.score_before = new.score_before
-            existing.score_after = new.score_after
-            existing.score_delta = new.score_delta
-            existing.atom_changes = new.atom_changes
-            existing.ring_changes = new.ring_changes
-            existing.mw_change = new.mw_change
-            existing.trajectory = new.trajectory
-
-            # If new experience has GPT summary and existing doesn't, use new one
-            if new.gpt_summary and not existing.gpt_summary:
-                existing.gpt_summary = new.gpt_summary
-
+            # Move all transformation-dependent state with the new representative.
+            replacement_fields = (
+                'created_epoch', 'before_smiles', 'after_smiles', 'trajectory',
+                'score_before', 'score_after', 'score_delta',
+                'objective_deltas', 'atom_changes', 'ring_changes', 'mw_change',
+                'psa_change', 'hbd_change', 'hba_change',
+                'rotatable_bonds_change', 'stereo_centers_change',
+                'functional_groups_removed', 'functional_groups_added',
+                'mcs_smarts', 'removed_fragment', 'added_fragment',
+                'modification_type', 'before_scaffold', 'after_scaffold',
+                'scaffold_changed', 'is_scaffold_hop', 'scaffold_type',
+                'before_fingerprint', 'functional_group_tags',
+                'gpt_summary', 'gpt_evidence_ids',
+                'gpt_evidence_hash', 'gpt_summary_plan',
+            )
+            for field_name in replacement_fields:
+                setattr(existing, field_name, getattr(new, field_name))
         logger.debug(f"Merged experience {new.exp_id} into {existing.exp_id}, count={existing.occurrence_count}")
         return True
 
+    @staticmethod
+    def _is_retrievable(exp: SkillEntry) -> bool:
+        return (
+            bool(exp.gpt_summary and exp.gpt_summary.strip())
+            and bool(exp.gpt_evidence_ids)
+            and bool(exp.gpt_evidence_hash)
+            and bool(exp.gpt_summary_plan)
+        )
+
+    def _rebuild_canonical_pair_index_locked(self) -> None:
+        self._canonical_pair_index = {}
+        for experiences in self.experiences.values():
+            for exp in experiences:
+                key = self._get_smiles_key(exp)
+                if key is not None and key not in self._canonical_pair_index:
+                    self._canonical_pair_index[key] = exp
+
     def add_experience(self, exp: SkillEntry) -> bool:
         """
-        Add a new experience to the pool (thread-safe).
+        Add a new skill to memory (thread-safe).
 
         Args:
             exp: SkillEntry to add
@@ -1037,539 +1201,165 @@ class EvolvingSkillMemory:
         Returns:
             True if added, False if filtered out
         """
-        # Read-only mode: don't add new experiences
         if self.read_only:
             return False
 
-        # Filter by success/failure preference
-        if not self.include_failures and not exp.success:
+        if skill_transition_rejection_reason(
+            exp.before_smiles,
+            exp.after_smiles,
+            exp.score_before,
+            exp.score_after,
+            exp.score_delta,
+            exp.objective_deltas,
+        ) is not None:
             return False
 
-        # Filter by minimum delta
-        if abs(exp.score_delta) < self.min_score_delta:
+        if not self._is_retrievable(exp):
             return False
+        record, _ = validate_gpt_summary_payload(exp, exp.gpt_summary_plan)
+        if record is None or record['summary'] != exp.gpt_summary:
+            return False
+        exp.gpt_summary = str(record['summary'])
+        exp.gpt_evidence_ids = list(record['evidence_ids'])
+        exp.gpt_evidence_hash = str(record['evidence_hash'])
+        exp.gpt_summary_plan = dict(record['summary_plan'])
 
-        # Compute retrieval indices if not already done
-        if exp.before_fingerprint is None:
-            try:
-                exp.compute_indices()
-            except Exception as e:
-                logger.warning(f"Failed to compute indices for experience: {e}")
+        # Every direction-normalized objective must meet the success margin.
+        task_properties = exp.task.split('+')
+        if exp.objective_deltas:
+            if set(exp.objective_deltas) != set(task_properties):
                 return False
+            accepted = all(
+                exp.objective_deltas[prop] >= self.min_score_delta
+                for prop in task_properties
+            )
+        elif len(task_properties) > 1:
+            return False
+        elif exp.task == 'sa':
+            accepted = -exp.score_delta >= self.min_score_delta
+        else:
+            accepted = exp.score_delta >= self.min_score_delta
+        if not accepted:
+            return False
+
+        # Retrieval indices are always derived from the source molecule.
+        try:
+            exp.compute_indices()
+        except Exception as e:
+            logger.warning(f"Failed to compute indices for experience: {e}")
+            return False
+        if exp.before_fingerprint is None:
+            return False
 
         with self._lock:
             task_exps = self.experiences[exp.task]
 
-            # Check for duplicates and merge if enabled
-            if self.merge_enabled:
-                # 1. Check SMILES duplicates
-                if self.merge_by_smiles:
-                    smiles_key = self._get_smiles_key(exp)
-                    for existing in task_exps:
-                        if self._get_smiles_key(existing) == smiles_key:
-                            return self._merge_experience(existing, exp)
+            smiles_key = self._get_smiles_key(exp)
+            existing = (
+                self._canonical_pair_index.get(smiles_key)
+                if smiles_key is not None
+                else None
+            )
+            if existing is not None:
+                return self._merge_experience(existing, exp)
 
-                # 2. Check FG pattern duplicates
-                if self.merge_by_fg_pattern:
-                    fg_key = self._get_fg_pattern_key(exp)
-                    # Only merge by FG pattern if there are actual FG changes
-                    if fg_key != "removed:|added:":
-                        for existing in task_exps:
-                            if self._get_fg_pattern_key(existing) == fg_key:
-                                return self._merge_experience(existing, exp)
-
-            # No duplicates found, add as new experience
             task_exps.append(exp)
+            if smiles_key is not None:
+                self._canonical_pair_index[smiles_key] = exp
 
-            # Add to pending for GPT (with size limit to prevent memory leak)
-            self.pending_for_gpt.append(exp)
-            if len(self.pending_for_gpt) > self.max_pending_size:
-                # Remove oldest pending experiences
-                self.pending_for_gpt = self.pending_for_gpt[-self.max_pending_size:]
-
-            # Enforce max size by removing lowest SVS experiences
             if len(task_exps) > self.max_size:
-                # Filter out deprecated experiences first
-                active_exps = [e for e in task_exps if not e.is_deprecated]
-                # Pre-fetch total count for thread-safe SVS computation
-                total_count = self._total_retrieval_count
-                # Sort by SVS score (higher = keep)
-                active_exps.sort(key=lambda x: self.compute_svs(x, total_count), reverse=True)
-                # Keep top max_size active experiences
-                self.experiences[exp.task] = active_exps[:self.max_size]
+                self._trim_task_locked(exp.task)
+                self._rebuild_canonical_pair_index_locked()
 
         return True
 
-    # ============================================================
-    # SVS (Skill Value Score) Methods
-    # ============================================================
-
-    def compute_svs(self, exp: SkillEntry, total_retrieval_count: Optional[int] = None) -> float:
-        """
-        Compute Skill Value Score for an experience.
-
-        SVS = (w1 × |initial_delta| + w2 × avg_usage_delta) + c × sqrt(ln(N_total+1) / (N_e+1))
-
-        Args:
-            exp: The experience to score
-            total_retrieval_count: Optional pre-fetched count for thread safety
-
-        Returns:
-            SVS score (higher = better)
-        """
-        import math
-
-        w1 = self.svs_config.get('w1', 0.3)
-        w2 = self.svs_config.get('w2', 0.7)
-        c = self.svs_config.get('c', 0.5)
-
-        # Base value: weighted combination of initial and usage deltas
-        initial_value = abs(exp.score_delta)  # use absolute value for SA compatibility
-        usage_value = exp.avg_usage_delta if exp.usage_count > 0 else 0.0
-        base_score = w1 * initial_value + w2 * usage_value
-
-        # Thread-safe access to total retrieval count
-        if total_retrieval_count is None:
-            with self._lock:
-                total_retrieval_count = self._total_retrieval_count
-
-        # UCB exploration bonus: encourages trying less-used experiences
-        if total_retrieval_count > 0:
-            explore_bonus = c * math.sqrt(
-                math.log(total_retrieval_count + 1) / (exp.retrieval_count + 1)
-            )
-        else:
-            explore_bonus = c  # initial bonus when no retrievals yet
-
-        return base_score + explore_bonus
-
-    def _find_by_id(self, exp_id: str) -> Optional[SkillEntry]:
-        """Find experience by exp_id across all tasks."""
-        for task_exps in self.experiences.values():
-            for exp in task_exps:
-                if exp.exp_id == exp_id:
-                    return exp
-        return None
-
-    def record_retrieval(self, exp_ids: List[str]) -> int:
-        """
-        Record that experiences were retrieved and shown to the model.
-
-        Args:
-            exp_ids: List of experience IDs that were retrieved
-
-        Returns:
-            Number of experiences successfully updated
-        """
-        if self.read_only:
-            return 0
-
-        updated = 0
-        with self._lock:
-            self._total_retrieval_count += len(exp_ids)
-            for exp_id in exp_ids:
-                exp = self._find_by_id(exp_id)
-                if exp:
-                    exp.retrieval_count += 1
-                    updated += 1
-        return updated
-
-    def record_outcome(self, exp_ids: List[str], score_delta: float) -> int:
-        """
-        Record the outcome after using retrieved experiences.
-
-        Args:
-            exp_ids: List of experience IDs that were used
-            score_delta: Score change after the step (positive = improvement)
-
-        Returns:
-            Number of experiences successfully updated
-        """
-        if self.read_only:
-            return 0
-
-        updated = 0
-        with self._lock:
-            for exp_id in exp_ids:
-                exp = self._find_by_id(exp_id)
-                if exp:
-                    exp.total_usage_delta += score_delta
-                    if score_delta > 0:
-                        exp.positive_usage_count += 1
-                    else:
-                        exp.negative_usage_count += 1
-                    updated += 1
-        return updated
-
-    def deprecate_experience(self, exp_id: str, reason: str = "manual") -> bool:
-        """
-        Soft-delete an experience by marking it as deprecated.
-
-        Args:
-            exp_id: Experience ID to deprecate
-            reason: Reason for deprecation
-
-        Returns:
-            True if experience was found and deprecated
-        """
-        if self.read_only:
-            return False
-
-        with self._lock:
-            exp = self._find_by_id(exp_id)
-            if exp:
-                exp.is_deprecated = True
-                exp.deprecated_reason = reason
-                return True
-        return False
-
-    def auto_prune(self,
-                   min_retrieval: int = 10,
-                   max_negative_rate: float = 0.7) -> int:
-        """
-        Automatically deprecate low-effectiveness experiences.
-
-        Criteria: retrieval_count >= min_retrieval AND usage_success_rate < (1 - max_negative_rate)
-
-        Args:
-            min_retrieval: Minimum retrievals before considering for pruning
-            max_negative_rate: Maximum allowed negative outcome rate
-
-        Returns:
-            Number of experiences deprecated
-        """
-        if self.read_only:
-            return 0
-
-        pruned_count = 0
-        with self._lock:
-            for task_exps in self.experiences.values():
-                for exp in task_exps:
-                    if exp.is_deprecated:
-                        continue
-                    # Check pruning criteria
-                    if (exp.retrieval_count >= min_retrieval and
-                        exp.usage_count > 0 and
-                        exp.usage_success_rate < (1 - max_negative_rate)):
-                        exp.is_deprecated = True
-                        exp.deprecated_reason = f"auto_prune:success_rate={exp.usage_success_rate:.2f}"
-                        pruned_count += 1
-
-        if pruned_count > 0:
-            logger.info(f"[Experience Pool] Auto-pruned {pruned_count} low-effectiveness experiences")
-
-        return pruned_count
-
-    # ============================================================
-    # Consolidation Methods (GPT-based experience merging)
-    # ============================================================
-
-    def _compute_tanimoto(self, fp1: np.ndarray, fp2: np.ndarray) -> float:
-        """Compute Tanimoto similarity between two fingerprints."""
-        intersection = np.sum(fp1 & fp2)
-        union = np.sum(fp1 | fp2)
-        return intersection / union if union > 0 else 0.0
-
-    def find_consolidation_candidates(self,
-                                       task: str,
-                                       min_svs_percentile: float = 0.7,
-                                       similarity_threshold: float = 0.8,
-                                       min_group_size: int = 3,
-                                       max_group_size: int = 5) -> List[List['SkillEntry']]:
-        """
-        Find groups of similar high-SVS experiences that can be consolidated.
-
-        Strategy:
-        1. Filter to top N% by SVS score
-        2. Cluster by Tanimoto fingerprint similarity
-        3. Return groups meeting min_group_size
-
-        Args:
-            task: Task type to consolidate
-            min_svs_percentile: Only consider top N% SVS experiences (0.7 = top 30%)
-            similarity_threshold: Minimum Tanimoto similarity for grouping
-            min_group_size: Minimum experiences to form a consolidation group
-            max_group_size: Maximum experiences per group
-
-        Returns:
-            List of experience groups suitable for consolidation
-        """
-        if task not in self.experiences:
-            return []
-
-        # Get active experiences with GPT summary
-        active_exps = [e for e in self.experiences[task]
-                       if not e.is_deprecated and not e.is_consolidated and e.gpt_summary]
-
-        if len(active_exps) < min_group_size:
-            return []
-
-        # Score and sort by SVS
-        total_count = self._total_retrieval_count
-        scored = [(e, self.compute_svs(e, total_count)) for e in active_exps]
-        scored.sort(key=lambda x: x[1], reverse=True)
-
-        # Take top N% (at least min_group_size * 2 for clustering)
-        cutoff_idx = max(int(len(scored) * (1 - min_svs_percentile)), min_group_size * 2)
-        top_exps = [e for e, _ in scored[:cutoff_idx]]
-
-        # Cluster by fingerprint similarity
-        groups = []
-        used = set()
-
-        for exp in top_exps:
-            if exp.exp_id in used:
-                continue
-            if exp.before_fingerprint is None:
-                continue
-
-            # Build group with similar experiences
-            group = [exp]
-            for other in top_exps:
-                if other.exp_id == exp.exp_id or other.exp_id in used:
-                    continue
-                if other.before_fingerprint is None:
-                    continue
-
-                sim = self._compute_tanimoto(exp.before_fingerprint, other.before_fingerprint)
-                if sim >= similarity_threshold:
-                    group.append(other)
-                    if len(group) >= max_group_size:
-                        break
-
-            if len(group) >= min_group_size:
-                groups.append(group)
-                used.update(e.exp_id for e in group)
-
-        return groups
-
-    def consolidate_experiences(self,
-                                group: List['SkillEntry'],
-                                gpt_client) -> Optional['SkillEntry']:
-        """
-        Consolidate a group of similar experiences into one using GPT.
-
-        Args:
-            group: List of experiences to merge
-            gpt_client: OpenAI client for GPT calls
-
-        Returns:
-            New consolidated experience, or None if failed
-        """
-        if len(group) < 2 or self.read_only:
-            return None
-
-        task = group[0].task
-        total_count = self._total_retrieval_count
-
-        # Prepare GPT prompt
-        strategies = "\n".join([
-            f"{i+1}. {exp.gpt_summary} (SVS: {self.compute_svs(exp, total_count):.2f})"
-            for i, exp in enumerate(group)
-        ])
-
-        prompt = f"""You are an expert medicinal chemist. Analyze these {len(group)} similar molecular optimization strategies and consolidate them into ONE more profound, generalizable strategy.
-
-=== Task ===
-{task} optimization
-
-=== Strategies to Consolidate ===
-{strategies}
-
-=== Instructions ===
-1. Identify the COMMON PATTERN across all strategies
-2. Abstract away specific molecule details
-3. Create ONE unified strategy that captures the essence
-
-=== Output Format ===
-Write a single, actionable strategy sentence (15-30 words) that:
-- Describes the general chemical transformation principle
-- Is more abstract than the individual strategies
-- Can be applied to similar molecules
-
-OUTPUT ONLY THE STRATEGY SENTENCE, nothing else."""
-
-        # Call GPT
-        try:
-            response = gpt_client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.3,
-                max_tokens=100
-            )
-            consolidated_summary = response.choices[0].message.content.strip()
-        except Exception as e:
-            logger.error(f"[Consolidation] GPT call failed: {e}")
-            return None
-
-        # Calculate SVS-weighted average statistics
-        svs_scores = [self.compute_svs(e, total_count) for e in group]
-        total_svs = sum(svs_scores)
-
-        if total_svs == 0:
-            total_svs = 1  # Prevent division by zero
-
-        weighted_retrieval = sum(e.retrieval_count * s for e, s in zip(group, svs_scores)) / total_svs
-        weighted_usage_delta = sum(e.total_usage_delta * s for e, s in zip(group, svs_scores)) / total_svs
-        weighted_positive = sum(e.positive_usage_count * s for e, s in zip(group, svs_scores)) / total_svs
-        weighted_negative = sum(e.negative_usage_count * s for e, s in zip(group, svs_scores)) / total_svs
-
-        # Select best representative (highest SVS) as template
-        best_idx = svs_scores.index(max(svs_scores))
-        best_exp = group[best_idx]
-
-        # Create new consolidated experience
-        new_exp = SkillEntry(
-            exp_id=str(uuid.uuid4()),
-            task=task,
-            before_smiles=best_exp.before_smiles,
-            after_smiles=best_exp.after_smiles,
-            score_before=best_exp.score_before,
-            score_after=best_exp.score_after,
-            score_delta=sum(e.score_delta for e in group) / len(group),
-            success=best_exp.success,
-            gpt_summary=consolidated_summary,
-            before_fingerprint=best_exp.before_fingerprint.copy() if best_exp.before_fingerprint is not None else None,
-            functional_group_tags=best_exp.functional_group_tags.copy(),
-            # Inherit weighted average statistics
-            retrieval_count=int(weighted_retrieval),
-            total_usage_delta=weighted_usage_delta,
-            positive_usage_count=int(weighted_positive),
-            negative_usage_count=int(weighted_negative),
-            # Mark as consolidation product
-            is_from_consolidation=True,
-            consolidated_from=[e.exp_id for e in group],
-            occurrence_count=sum(e.occurrence_count for e in group)
+    def _trim_task_locked(self, task: str) -> None:
+        """Keep the highest-improvement skills for one task."""
+        ranked = sorted(
+            self.experiences[task],
+            key=lambda exp: exp.improvement_delta,
+            reverse=True,
         )
-
-        # Soft-delete original experiences and add new one
-        with self._lock:
-            for exp in group:
-                exp.is_consolidated = True
-                exp.consolidated_into = new_exp.exp_id
-
-            self.experiences[task].append(new_exp)
-
-        logger.info(f"[Consolidation] Merged {len(group)} experiences -> {new_exp.exp_id[:8]}...")
-        return new_exp
-
-    def run_consolidation(self,
-                          gpt_client,
-                          tasks: Optional[List[str]] = None,
-                          **kwargs) -> Dict[str, int]:
-        """
-        Run consolidation on specified tasks.
-
-        Args:
-            gpt_client: OpenAI client for GPT calls
-            tasks: List of tasks to consolidate (None = all tasks)
-            **kwargs: Arguments passed to find_consolidation_candidates
-
-        Returns:
-            Dict mapping task -> number of consolidations performed
-        """
-        if self.read_only:
-            return {}
-
-        if tasks is None:
-            tasks = list(self.experiences.keys())
-
-        results = {}
-        for task in tasks:
-            groups = self.find_consolidation_candidates(task, **kwargs)
-            count = 0
-            for group in groups:
-                new_exp = self.consolidate_experiences(group, gpt_client)
-                if new_exp:
-                    count += 1
-            results[task] = count
-
-        total = sum(results.values())
-        if total > 0:
-            logger.info(f"[Consolidation] Total: {total} consolidations across {len(results)} tasks")
-
-        return results
+        self.experiences[task] = ranked[:self.max_size]
 
     def query_by_functional_group(self,
                                    current_fgs: Dict[str, int],
                                    task: str,
                                    top_k: int = 3,
-                                   min_jaccard: float = 0.3,
-                                   success_only: bool = True) -> List[SkillEntry]:
+                                   min_jaccard: float = 0.8,
+                                   smiles: Optional[str] = None) -> List[SkillEntry]:
         """
         Query experiences by matching functional groups.
 
-        Uses two-stage filtering: first by Jaccard similarity, then ranked by SVS.
+        Uses Jaccard similarity as a relevance filter, then ranks by the
+        observed improvement of the source edit.
 
         Args:
             current_fgs: Detected FGs in current molecule {fg_name: count}
             task: Task type to filter by
             top_k: Number of results to return
             min_jaccard: Minimum Jaccard similarity threshold
-            success_only: Only return successful experiences
-
+            smiles: Current molecule used to validate source-side action
+                requirements
         Returns:
-            List of relevant experiences sorted by SVS score
+            List of relevant experiences sorted by improvement delta
         """
-        if task not in self.experiences:
+        task_experiences = self._experiences_for_task(task)
+        if not task_experiences:
             return []
 
-        # Apply pruning to input FGs for consistent comparison
+        query_mol = Chem.MolFromSmiles(smiles) if smiles else None
+        if smiles and query_mol is None:
+            return []
+        query_profile = _query_action_profile(current_fgs, query_mol)
         current_fg_set = set(FunctionalGroupPruner.prune(list(current_fgs.keys())))
         results = []
 
-        for exp in self.experiences[task]:
-            # Skip deprecated or consolidated experiences
-            if exp.is_deprecated or exp.is_consolidated:
+        for exp in task_experiences:
+            if not self._is_retrievable(exp):
                 continue
-            # Only include experiences with GPT summary
-            if not exp.gpt_summary:
+            if not _source_action_matches_profile(exp, query_profile):
                 continue
-            if success_only and not exp.success:
-                continue
-
-            # Calculate Jaccard similarity for FG overlap (normalized)
             intersection = len(current_fg_set & exp.functional_group_tags)
             union = len(current_fg_set | exp.functional_group_tags)
             if intersection > 0 and union > 0:
-                # Jaccard similarity normalizes for molecule complexity
                 jaccard_sim = intersection / union
 
-                # Apply Jaccard threshold filter
                 if jaccard_sim < min_jaccard:
                     continue
 
-                # Compute SVS score for ranking
-                svs = self.compute_svs(exp)
-                results.append((exp, svs, jaccard_sim))
+                results.append((exp, jaccard_sim))
 
-        # Sort by SVS score (higher = better)
-        results.sort(key=lambda x: x[1], reverse=True)
-        return [exp for exp, _, _ in results[:top_k]]
+        results.sort(
+            key=lambda item: (item[0].improvement_delta, item[1]),
+            reverse=True,
+        )
+        ranked = [exp for exp, _ in results]
+        return self.select_distinct_actions(ranked, top_k)
 
     def query_by_similarity(self,
                             smiles: str,
                             task: str,
                             top_k: int = 2,
-                            min_similarity: float = 0.3) -> List[SkillEntry]:
+                            min_similarity: float = 0.5) -> List[SkillEntry]:
         """
         Query experiences by molecular similarity.
 
-        Uses two-stage filtering: first by Tanimoto similarity, then ranked by SVS.
+        Uses Tanimoto similarity as a relevance filter, then ranks by the
+        observed improvement of the source edit.
 
         Args:
             smiles: SMILES of current molecule
             task: Task type
             top_k: Number of results
             min_similarity: Minimum Tanimoto similarity threshold
-
         Returns:
-            List of similar experiences sorted by SVS score
+            List of similar experiences sorted by improvement delta
         """
-        if task not in self.experiences:
+        task_experiences = self._experiences_for_task(task)
+        if not task_experiences:
             return []
 
-        # Compute query fingerprint
         mol = Chem.MolFromSmiles(smiles)
         if mol is None:
             return []
@@ -1577,410 +1367,353 @@ OUTPUT ONLY THE STRATEGY SENTENCE, nothing else."""
         query_fp = GetMorganFingerprintAsBitVect(mol, 2, nBits=2048)
         query_arr = np.zeros(2048, dtype=np.int8)
         DataStructs.ConvertToNumpyArray(query_fp, query_arr)
+        current_fgs = detect_functional_groups(smiles)
+        query_profile = _query_action_profile(current_fgs, mol)
 
         results = []
-        for exp in self.experiences[task]:
-            # Skip deprecated or consolidated experiences
-            if exp.is_deprecated or exp.is_consolidated:
+        for exp in task_experiences:
+            if not self._is_retrievable(exp):
                 continue
-            # Only include experiences with GPT summary
-            if not exp.gpt_summary:
+            if not _source_action_matches_profile(exp, query_profile):
                 continue
             if exp.before_fingerprint is None:
                 continue
 
-            # Compute Tanimoto similarity
             intersection = np.sum(query_arr & exp.before_fingerprint)
             union = np.sum(query_arr | exp.before_fingerprint)
             similarity = intersection / union if union > 0 else 0
 
             if similarity >= min_similarity:
-                # Compute SVS score for ranking
-                svs = self.compute_svs(exp)
-                results.append((exp, svs, similarity))
+                results.append((exp, similarity))
 
-        # Sort by SVS score (higher = better)
-        results.sort(key=lambda x: x[1], reverse=True)
-        return [exp for exp, _, _ in results[:top_k]]
+        results.sort(
+            key=lambda item: (item[0].improvement_delta, item[1]),
+            reverse=True,
+        )
+        ranked = [exp for exp, _ in results]
+        return self.select_distinct_actions(ranked, top_k)
 
-    def query_by_task(self,
-                      task: str,
-                      top_k: int = 2,
-                      success_only: bool = True) -> List[SkillEntry]:
+    def generate_gpt_summaries(
+        self,
+        experiences: List[SkillEntry],
+        total_timeout: int = 600,
+        max_workers: int = 8,
+        model: Optional[str] = None,
+        credential_env_prefix: str = "AZURE_OPENAI",
+        max_completion_tokens: int = 150,
+        reasoning_effort: Optional[str] = None,
+    ) -> Dict[str, Dict[str, Any]]:
+        """Summarize a detached candidate batch exactly once."""
+        with self._summary_generation_lock:
+            return self._generate_gpt_summaries_once(
+                experiences=experiences,
+                total_timeout=total_timeout,
+                max_workers=max_workers,
+                model=model,
+                credential_env_prefix=credential_env_prefix,
+                max_completion_tokens=max_completion_tokens,
+                reasoning_effort=reasoning_effort,
+            )
+
+    def _generate_gpt_summaries_once(
+        self,
+        experiences: List[SkillEntry],
+        total_timeout: int = 600,
+        max_workers: int = 8,
+        model: Optional[str] = None,
+        credential_env_prefix: str = "AZURE_OPENAI",
+        max_completion_tokens: int = 150,
+        reasoning_effort: Optional[str] = None,
+    ) -> Dict[str, Dict[str, Any]]:
         """
-        Query best experiences for a task (general strategies).
-        Only returns experiences with GPT summary.
+        Generate evidence-validated summaries for every candidate in one pass.
 
         Args:
-            task: Task type
-            top_k: Number of results
-            success_only: Only return successful experiences
-
-        Returns:
-            List of top experiences by improvement (with GPT summary only)
-        """
-        if task not in self.experiences:
-            return []
-
-        exps = self.experiences[task]
-        # Only include experiences with GPT summary
-        exps = [e for e in exps if e.gpt_summary]
-        if success_only:
-            exps = [e for e in exps if e.success]
-
-        # Sort by improvement
-        # SA task: lower score is better (negative delta = improvement), sort ascending
-        # Other tasks: higher score is better (positive delta = improvement), sort descending
-        if task == 'sa':
-            exps = sorted(exps, key=lambda x: x.score_delta, reverse=False)
-        else:
-            exps = sorted(exps, key=lambda x: x.score_delta, reverse=True)
-        return exps[:top_k]
-
-    def get_pending_experiences(self, batch_size: int = 30) -> List[SkillEntry]:
-        """Get experiences pending GPT summarization"""
-        pending = self.pending_for_gpt[:batch_size]
-        return pending
-
-    def update_gpt_summaries(self, summaries: Dict[str, str]):
-        """
-        Update experiences with GPT-generated summaries.
-
-        Args:
-            summaries: Dict mapping exp_id to summary text
-        """
-        # Update summaries in BOTH pending_for_gpt AND experiences
-        # (needed because after load(), they are different objects)
-        for exp in self.pending_for_gpt:
-            if exp.exp_id in summaries:
-                exp.gpt_summary = summaries[exp.exp_id]
-
-        # Also update in experiences (in case objects differ after load)
-        for task_exps in self.experiences.values():
-            for exp in task_exps:
-                if exp.exp_id in summaries:
-                    exp.gpt_summary = summaries[exp.exp_id]
-
-        # Remove summarized exp_ids from pending
-        summarized_ids = set(summaries.keys())
-        self.pending_for_gpt = [
-            exp for exp in self.pending_for_gpt
-            if exp.exp_id not in summarized_ids
-        ]
-
-    def generate_gpt_summaries(self, batch_size: int = None, total_timeout: int = 600, max_workers: int = 8) -> Dict[str, str]:
-        """
-        Generate GPT summaries for ALL pending experiences using parallel requests.
-
-        Args:
-            batch_size: Ignored (processes all pending). Kept for backwards compatibility.
+            experiences: Detached transformations collected in the current step.
             total_timeout: Maximum total time in seconds (default 10 minutes)
             max_workers: Number of parallel requests (default 8)
+            model: Azure deployment name. Defaults to the deployment variable
+                under ``credential_env_prefix`` and finally ``gpt-4o``.
+            credential_env_prefix: Prefix for the Azure API key, endpoint,
+                API version, and deployment environment variables.
+            max_completion_tokens: Completion budget for each summary.
+            reasoning_effort: Optional reasoning effort for GPT-5 deployments.
 
         Returns:
-            Dict mapping exp_id to generated summary
+            Dict mapping candidate exp_id to validated summary record. Each
+            returned record has also been attached to the detached entry.
         """
         import time
-        from concurrent.futures import ThreadPoolExecutor, as_completed
+        from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 
-        # Get ALL pending experiences
+        if total_timeout <= 0:
+            raise ValueError("total_timeout must be positive")
+        if max_workers <= 0:
+            raise ValueError("max_workers must be positive")
+        if max_completion_tokens <= 0:
+            raise ValueError("max_completion_tokens must be positive")
+        exp_ids = [exp.exp_id for exp in experiences]
+        if len(exp_ids) != len(set(exp_ids)):
+            raise ValueError("Candidate experience IDs must be unique")
+
+        experiences = [
+            exp for exp in experiences
+            if skill_transition_rejection_reason(
+                exp.before_smiles,
+                exp.after_smiles,
+                exp.score_before,
+                exp.score_after,
+                exp.score_delta,
+                exp.objective_deltas,
+            ) is None
+        ]
+
+        # Collapse exact pairs before incurring API cost, retaining the edit
+        # with the largest observed improvement. Existing stronger cards need
+        # no new summary.
+        best_by_key: Dict[Any, SkillEntry] = {}
+        for exp in experiences:
+            if self._is_retrievable(exp):
+                continue
+            key = self._get_smiles_key(exp)
+            candidate_key = ("pair", key) if key is not None else ("id", exp.exp_id)
+            existing = best_by_key.get(candidate_key)
+            if existing is None or exp.improvement_delta > existing.improvement_delta:
+                best_by_key[candidate_key] = exp
+
         with self._lock:
-            pending = list(self.pending_for_gpt)
+            active_pairs = dict(self._canonical_pair_index)
+        candidates = [
+            exp
+            for candidate_key, exp in best_by_key.items()
+            if candidate_key[0] != "pair"
+            or candidate_key[1] not in active_pairs
+            or exp.improvement_delta > active_pairs[candidate_key[1]].improvement_delta
+        ]
+        candidates.sort(key=lambda exp: exp.improvement_delta, reverse=True)
 
-        if not pending:
+        if not candidates:
             return {}
 
         try:
-            from openai import AzureOpenAI, RateLimitError, AuthenticationError, APITimeoutError, APIConnectionError
+            from openai import (
+                APIConnectionError,
+                APITimeoutError,
+                AuthenticationError,
+                AzureOpenAI,
+                BadRequestError,
+                PermissionDeniedError,
+                RateLimitError,
+            )
         except ImportError:
-            logger.warning("openai package not installed, skipping GPT summarization")
-            return {}
+            raise RuntimeError(
+                "openai is required for evidence-validated Evolving Skill Memory"
+            )
 
-        # Get API key from environment
-        api_key = os.environ.get("AZURE_OPENAI_API_KEY")
-        if not api_key:
-            api_key = "YOUR_API_KEY_HERE"  # Replace with your API key
-            logger.warning("Set AZURE_OPENAI_API_KEY environment variable for production.")
+        env_prefix = credential_env_prefix.rstrip('_')
+        api_key_name = f"{env_prefix}_API_KEY"
+        endpoint_name = f"{env_prefix}_ENDPOINT"
+        api_version_name = f"{env_prefix}_API_VERSION"
+        deployment_name = f"{env_prefix}_DEPLOYMENT"
+
+        api_key = os.environ.get(api_key_name)
+        endpoint = os.environ.get(endpoint_name)
+        if not api_key or not endpoint:
+            raise RuntimeError(
+                f"GPT summarization requires both {api_key_name} and {endpoint_name}"
+            )
+
+        deployment = model or os.environ.get(deployment_name) or "gpt-4o"
 
         try:
             client = AzureOpenAI(
                 api_key=api_key,
-                api_version=os.environ.get("AZURE_OPENAI_API_VERSION", "2024-02-15-preview"),
-                azure_endpoint=os.environ.get("AZURE_OPENAI_ENDPOINT",
-                                              "YOUR_AZURE_ENDPOINT"),
-                timeout=30.0
+                api_version=os.environ.get(api_version_name, "2024-02-15-preview"),
+                azure_endpoint=endpoint,
+                timeout=30.0,
+                max_retries=0,
             )
         except Exception as e:
-            logger.warning(f"Failed to create Azure OpenAI client: {e}")
-            return {}
+            raise RuntimeError("Failed to create Azure OpenAI client") from e
+
+        deadline = time.monotonic() + float(total_timeout)
+        stop_event = threading.Event()
 
         def process_single_exp(exp: SkillEntry) -> tuple:
-            """Process a single experience and return (exp_id, summary or None)"""
+            """Return exp_id, status, validated record/reason."""
+            catalog = build_summary_evidence(exp)
+            kinds = {item["kind"] for item in catalog.values()}
+            if "objective" not in kinds or len(kinds - {"objective"}) == 0:
+                return exp.exp_id, "rejected", "insufficient_rdkit_evidence"
+
             prompt = format_gpt_prompt(exp)
             max_retries = 2
 
             for attempt in range(max_retries):
+                remaining = deadline - time.monotonic()
+                if stop_event.is_set() or remaining <= 0:
+                    return exp.exp_id, "retryable", "batch_timeout"
                 try:
-                    response = client.chat.completions.create(
-                        model="gpt-4o",
-                        messages=[{"role": "user", "content": prompt}],
-                        max_tokens=150,
-                        temperature=0.3
-                    )
-                    summary = response.choices[0].message.content.strip()
+                    request = {
+                        "model": deployment,
+                        "messages": [{"role": "user", "content": prompt}],
+                        "response_format": _structured_summary_response_format(catalog),
+                        "timeout": min(30.0, max(0.1, remaining)),
+                    }
+                    if deployment.lower().startswith("gpt-5"):
+                        request["max_completion_tokens"] = int(max_completion_tokens)
+                        if reasoning_effort:
+                            request["reasoning_effort"] = reasoning_effort
+                    else:
+                        request["max_tokens"] = int(max_completion_tokens)
+                        request["temperature"] = 0.3
 
-                    if len(summary) < 10:
-                        return (exp.exp_id, None)
-
-                    return (exp.exp_id, summary)
+                    response = client.chat.completions.create(**request)
+                    message = response.choices[0].message
+                    if getattr(message, "refusal", None):
+                        return exp.exp_id, "rejected", "model_refusal"
+                    content = (message.content or "").strip()
+                    try:
+                        payload = json.loads(content)
+                    except (TypeError, json.JSONDecodeError):
+                        return exp.exp_id, "rejected", "invalid_json"
+                    record, error = validate_gpt_summary_payload(exp, payload)
+                    if record is None:
+                        return exp.exp_id, "rejected", error
+                    return exp.exp_id, "validated", record
 
                 except RateLimitError:
                     if attempt < max_retries - 1:
-                        time.sleep(2)
+                        stop_event.wait(min(2.0, max(0.0, deadline - time.monotonic())))
                     continue
                 except (APITimeoutError, APIConnectionError):
                     if attempt < max_retries - 1:
-                        time.sleep(1)
+                        stop_event.wait(min(1.0, max(0.0, deadline - time.monotonic())))
                     continue
                 except AuthenticationError as e:
                     logger.error(f"Authentication failed: {e}")
-                    return (exp.exp_id, None)
+                    return exp.exp_id, "fatal", "authentication_error"
+                except PermissionDeniedError as e:
+                    logger.error(f"GPT permission denied: {e}")
+                    return exp.exp_id, "fatal", "permission_denied"
+                except BadRequestError as e:
+                    logger.debug(f"GPT structured-output request rejected: {e}")
+                    return exp.exp_id, "rejected", "bad_request"
                 except Exception as e:
                     logger.debug(f"GPT failed for {exp.exp_id}: {e}")
-                    return (exp.exp_id, None)
+                    return exp.exp_id, "retryable", type(e).__name__
 
-            return (exp.exp_id, None)
+            return exp.exp_id, "retryable", "transient_api_error"
 
-        summaries = {}
-        start_time = time.time()
+        summaries: Dict[str, Dict[str, Any]] = {}
+        fatal_reason = ""
+        timed_out = False
+        request_rejected = False
+        transient_failure = False
+        executor = ThreadPoolExecutor(max_workers=max_workers)
+        candidate_iter = iter(candidates)
+        in_flight = {}
 
-        # Process in parallel with ThreadPoolExecutor
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            futures = {executor.submit(process_single_exp, exp): exp for exp in pending}
-
-            for future in as_completed(futures):
-                # Check timeout
-                if time.time() - start_time > total_timeout:
-                    logger.warning(f"GPT summarization timeout after {total_timeout}s")
-                    break
-
+        def fill_worker_slots() -> None:
+            while len(in_flight) < max_workers and time.monotonic() < deadline:
                 try:
-                    exp_id, summary = future.result(timeout=30)
-                    if summary:
-                        summaries[exp_id] = summary
-                except Exception as e:
-                    logger.debug(f"Future failed: {e}")
+                    exp = next(candidate_iter)
+                except StopIteration:
+                    return
+                in_flight[executor.submit(process_single_exp, exp)] = exp
 
-        # Update summaries
-        if summaries:
-            with self._lock:
-                self.update_gpt_summaries(summaries)
-            logger.info(f"[GPT Summary] Generated {len(summaries)}/{len(pending)} summaries in {time.time()-start_time:.1f}s")
+        try:
+            fill_worker_slots()
+            while in_flight:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    timed_out = True
+                    break
+                done, _ = wait(
+                    tuple(in_flight),
+                    timeout=remaining,
+                    return_when=FIRST_COMPLETED,
+                )
+                if not done:
+                    timed_out = True
+                    break
+                for future in done:
+                    exp = in_flight.pop(future)
+                    try:
+                        exp_id, status, result = future.result()
+                    except Exception as exc:
+                        exp_id = exp.exp_id
+                        status, result = "failed", type(exc).__name__
+                    if status == "validated":
+                        summaries[exp_id] = result
+                    elif status == "fatal":
+                        fatal_reason = str(result)
+                        stop_event.set()
+                        break
+                    elif status == "rejected" and result == "bad_request":
+                        request_rejected = True
+                    elif status in {"retryable", "failed"}:
+                        transient_failure = True
+                if fatal_reason:
+                    break
+                fill_worker_slots()
+        finally:
+            if timed_out or fatal_reason:
+                stop_event.set()
+            for future in in_flight:
+                future.cancel()
+            executor.shutdown(wait=True, cancel_futures=True)
 
-        return summaries
+        if timed_out:
+            logger.warning("GPT summarization reached the %ss deadline", total_timeout)
+        if request_rejected:
+            logger.warning(
+                "GPT rejected at least one summary request; affected skills were discarded"
+            )
+        if transient_failure and not timed_out:
+            logger.warning(
+                "At least one GPT summary request failed; affected skills were discarded"
+            )
 
-    def get_fg_statistics(self, task: str = None) -> Dict:
-        """
-        Get functional group change statistics.
+        if fatal_reason:
+            raise RuntimeError(
+                f"GPT summarization cannot continue: {fatal_reason}"
+            )
 
-        Args:
-            task: Optional task filter
-
-        Returns:
-            Dict of FG change statistics
-        """
-        if task:
-            exps = self.experiences.get(task, [])
-        else:
-            exps = []
-            for task_exps in self.experiences.values():
-                exps.extend(task_exps)
-
-        return aggregate_fg_statistics(exps)
-
-    def get_fg_success_rates(self, task: str = None, min_count: int = 2) -> Dict[str, Dict]:
-        """
-        Learn functional group transformation success rates from experience pool.
-
-        This method analyzes the experience pool to determine which functional group
-        additions/removals lead to better scores, enabling dynamic learning of
-        effective molecular transformations.
-
-        Args:
-            task: Optional task filter (e.g., 'qed', 'sa')
-            min_count: Minimum observation count to include in results
-
-        Returns:
-            Dict with 'recommended' (positive effect) and 'avoid' (negative effect) FG changes,
-            each containing transformation details sorted by effectiveness
-        """
-        # Thread-safe access to experiences
-        with self._lock:
-            if task:
-                exps = list(self.experiences.get(task, []))
-            else:
-                exps = []
-                for task_exps in self.experiences.values():
-                    exps.extend(task_exps)
-
-        if not exps:
-            return {'recommended': [], 'avoid': [], 'all_stats': {}}
-
-        # Collect FG transformation statistics
-        fg_transforms = defaultdict(list)  # {transform_pattern: [(score_delta, task), ...]}
-
-        for exp in exps:
-            # Validate score_delta is valid
-            if exp.score_delta is None or np.isnan(exp.score_delta):
+        by_id = {exp.exp_id: exp for exp in candidates}
+        attached: Dict[str, Dict[str, Any]] = {}
+        for exp_id, record in summaries.items():
+            exp = by_id[exp_id]
+            checked, _ = validate_gpt_summary_payload(
+                exp, record.get("summary_plan", record)
+            )
+            if checked is None:
                 continue
+            exp.gpt_summary = str(checked["summary"])
+            exp.gpt_evidence_ids = list(checked["evidence_ids"])
+            exp.gpt_evidence_hash = str(checked["evidence_hash"])
+            exp.gpt_summary_plan = dict(checked["summary_plan"])
+            attached[exp_id] = checked
 
-            # Get FG changes
-            for fg in (exp.functional_groups_added or []):
-                if fg and fg.strip():
-                    fg_transforms[f"+{fg.strip()}"].append((exp.score_delta, exp.task))
-            for fg in (exp.functional_groups_removed or []):
-                if fg and fg.strip():
-                    fg_transforms[f"-{fg.strip()}"].append((exp.score_delta, exp.task))
-
-        # Compute statistics for each transformation
-        all_stats = {}
-        for pattern, observations in fg_transforms.items():
-            if len(observations) < min_count:
-                continue
-
-            deltas = [d for d, _ in observations]
-            tasks = [t for _, t in observations]
-
-            # For SA task, lower delta is better (minimize SA)
-            # For others, higher delta is better (maximize QED, etc.)
-            # Check if 'sa' appears in any task name (including multi-objective like 'sa+qed')
-            sa_count = sum(1 for t in tasks if 'sa' in t.lower())
-            is_sa_dominant = sa_count > len(tasks) / 2
-
-            avg_delta = sum(deltas) / len(deltas)
-            success_rate = sum(1 for d in deltas if d > 0) / len(deltas) if not is_sa_dominant else \
-                          sum(1 for d in deltas if d < 0) / len(deltas)
-
-            all_stats[pattern] = {
-                'pattern': pattern,
-                'count': len(observations),
-                'avg_delta': avg_delta,
-                'success_rate': success_rate,
-                'max_delta': max(deltas),
-                'min_delta': min(deltas),
-                'std_delta': float(np.std(deltas, ddof=1)) if len(deltas) > 1 else 0.0,
-                'is_sa_task': is_sa_dominant
-            }
-
-        # Separate into recommended and avoid based on average effect
-        recommended = []
-        avoid = []
-
-        for pattern, stats in all_stats.items():
-            # Determine effectiveness based on task type
-            if stats['is_sa_task']:
-                # For SA: negative delta = good (lowering SA)
-                is_effective = stats['avg_delta'] < 0
-            else:
-                # For others: positive delta = good
-                is_effective = stats['avg_delta'] > 0
-
-            if is_effective:
-                recommended.append(stats)
-            else:
-                avoid.append(stats)
-
-        # Sort by effectiveness (absolute average delta)
-        recommended.sort(key=lambda x: abs(x['avg_delta']), reverse=True)
-        avoid.sort(key=lambda x: abs(x['avg_delta']), reverse=True)
-
-        return {
-            'recommended': recommended,
-            'avoid': avoid,
-            'all_stats': all_stats
-        }
-
-    def get_top_transformations(self, task: str, top_k: int = 5) -> List[str]:
-        """
-        Get top recommended functional group transformations for a task.
-
-        Args:
-            task: Task type (e.g., 'qed', 'sa')
-            top_k: Number of recommendations to return
-
-        Returns:
-            List of recommended transformation patterns (e.g., ['+phenol', '-nitro'])
-        """
-        success_rates = self.get_fg_success_rates(task=task, min_count=2)
-        recommended = success_rates.get('recommended', [])
-        return [r['pattern'] for r in recommended[:top_k]]
+        return attached
 
     def __len__(self) -> int:
-        """Return total number of experiences in the pool"""
+        """Return the total number of stored skills."""
         return sum(len(exps) for exps in self.experiences.values())
 
-    def get_pool_stats(self) -> Dict:
-        """Get overall pool statistics"""
-        total = sum(len(exps) for exps in self.experiences.values())
-        success_count = sum(
-            sum(1 for e in exps if e.success)
-            for exps in self.experiences.values()
-        )
-        with_summary = sum(
-            sum(1 for e in exps if e.gpt_summary)
-            for exps in self.experiences.values()
-        )
-
-        # Calculate avg_delta across all experiences
-        total_delta = sum(
-            exp.score_delta for task_exps in self.experiences.values() for exp in task_exps
-        )
-        avg_delta = total_delta / total if total > 0 else 0.0
-
-        # SVS usage tracking stats
-        all_exps = [exp for task_exps in self.experiences.values() for exp in task_exps]
-        deprecated_count = sum(1 for e in all_exps if e.is_deprecated)
-        high_freq_count = sum(1 for e in all_exps if e.retrieval_count >= 5)
-        total_retrievals = sum(e.retrieval_count for e in all_exps)
-        avg_retrieval = total_retrievals / total if total > 0 else 0.0
-
-        # Calculate average SVS for non-deprecated experiences
-        active_exps = [e for e in all_exps if not e.is_deprecated]
-        if active_exps:
-            avg_svs = sum(self.compute_svs(e) for e in active_exps) / len(active_exps)
-        else:
-            avg_svs = 0.0
-
-        return {
-            'total_experiences': total,
-            'success_experiences': success_count,
-            'failure_experiences': total - success_count,
-            'with_gpt_summary': with_summary,
-            'pending_for_gpt': len(self.pending_for_gpt),
-            'avg_delta': avg_delta,
-            'tasks': list(self.experiences.keys()),
-            'experiences_per_task': {
-                task: len(exps) for task, exps in self.experiences.items()
-            },
-            # SVS usage tracking
-            'usage_tracking': {
-                'total_retrievals': self._total_retrieval_count,
-                'avg_retrieval_per_exp': avg_retrieval,
-                'high_freq_count': high_freq_count,
-                'deprecated_count': deprecated_count,
-                'active_count': total - deprecated_count,
-                'avg_svs': avg_svs,
-            },
-            # Consolidation stats
-            'consolidation': {
-                'consolidated_count': sum(1 for e in all_exps if e.is_consolidated),
-                'from_consolidation_count': sum(1 for e in all_exps if e.is_from_consolidation),
-            },
-        }
+    @staticmethod
+    def _storage_paths(path: str) -> Tuple[str, str]:
+        """Return distinct human-readable JSON and full PKL paths."""
+        root, extension = os.path.splitext(path)
+        extension = extension.lower()
+        if extension == '.json':
+            return path, root + '.pkl'
+        if extension == '.pkl':
+            return root + '.json', path
+        return path + '.json', path + '.pkl'
 
     def save(self, path: Optional[str] = None):
-        """Save pool to disk atomically (thread-safe)"""
-        # Read-only mode: don't save
+        """Save one serialized memory snapshot (thread-safe)."""
         if self.read_only:
             return
 
@@ -1988,44 +1721,36 @@ OUTPUT ONLY THE STRATEGY SENTENCE, nothing else."""
         if not save_path:
             return
 
-        # Ensure directory exists
-        save_dir = os.path.dirname(save_path)
+        with self._save_lock:
+            self._save_once(save_path)
+
+    def _save_once(self, save_path: str) -> None:
+        """Build and persist a snapshot while ``_save_lock`` is held."""
+
+        json_path, pkl_path = self._storage_paths(save_path)
+
+        save_dir = os.path.dirname(json_path)
         if save_dir:
             os.makedirs(save_dir, exist_ok=True)
 
         with self._lock:
-            # PKL: full data with fingerprints
             data_full = {
                 'max_size': self.max_size,
-                'include_failures': self.include_failures,
                 'min_score_delta': self.min_score_delta,
                 'experiences': {
                     task: [exp.to_dict() for exp in exps]
                     for task, exps in self.experiences.items()
                 },
-                'pending_for_gpt': [exp.to_dict() for exp in self.pending_for_gpt],
-                'fg_statistics': self.fg_statistics,
-                # SVS tracking state
-                'svs_config': self.svs_config,
-                '_total_retrieval_count': self._total_retrieval_count,
             }
-            # JSON: simplified data without fingerprints (for human readability)
             data_json = {
                 'max_size': self.max_size,
-                'include_failures': self.include_failures,
                 'min_score_delta': self.min_score_delta,
                 'experiences': {
                     task: [exp.to_dict_for_json() for exp in exps]
                     for task, exps in self.experiences.items()
                 },
-                'pending_for_gpt': [exp.to_dict_for_json() for exp in self.pending_for_gpt],
-                'fg_statistics': self.fg_statistics,
-                # SVS tracking state
-                'svs_config': self.svs_config,
-                '_total_retrieval_count': self._total_retrieval_count,
             }
 
-        # Atomic save for JSON using temp file + move
         tmp_json_path = None
         tmp_pkl_path = None
         try:
@@ -2033,194 +1758,595 @@ OUTPUT ONLY THE STRATEGY SENTENCE, nothing else."""
                                              dir=save_dir or '.', suffix='.json') as tmp_f:
                 json.dump(data_json, tmp_f, indent=2)
                 tmp_json_path = tmp_f.name
-            shutil.move(tmp_json_path, save_path)
-            tmp_json_path = None  # Clear after successful move
-
-            # Atomic save for pickle (full data)
-            pkl_path = save_path.replace('.json', '.pkl')
+            # Serialize both snapshots before atomically replacing either file.
             with tempfile.NamedTemporaryFile('wb', delete=False,
                                              dir=save_dir or '.', suffix='.pkl') as tmp_f:
                 pickle.dump(data_full, tmp_f)
                 tmp_pkl_path = tmp_f.name
-            shutil.move(tmp_pkl_path, pkl_path)
-            tmp_pkl_path = None  # Clear after successful move
 
-            logger.info(f"Experience pool saved to {save_path}")
+            # Commit authoritative PKL last.
+            shutil.move(tmp_json_path, json_path)
+            tmp_json_path = None
+            shutil.move(tmp_pkl_path, pkl_path)
+            tmp_pkl_path = None
+
+            logger.info("Evolving Skill Memory saved to %s and %s", json_path, pkl_path)
         except Exception as e:
-            logger.error(f"Failed to save experience pool: {e}")
-            # Clean up any remaining temp files
+            logger.error(f"Failed to save Evolving Skill Memory: {e}")
             for tmp_path in [tmp_json_path, tmp_pkl_path]:
                 if tmp_path and os.path.exists(tmp_path):
                     try:
                         os.remove(tmp_path)
                     except Exception:
                         pass
+            raise RuntimeError("Failed to persist Evolving Skill Memory") from e
 
     def load(self, path: Optional[str] = None):
-        """Load pool from disk (PKL only)"""
+        """Load memory from disk (PKL only)."""
         load_path = path or self.save_path
         if not load_path:
             return
 
         # Only load from PKL (JSON is for human readability only)
-        pkl_path = load_path.replace('.json', '.pkl')
+        _, pkl_path = self._storage_paths(load_path)
         if not os.path.exists(pkl_path):
-            raise FileNotFoundError(f"Experience pool PKL file not found: {pkl_path}")
+            raise FileNotFoundError(f"Evolving Skill Memory PKL file not found: {pkl_path}")
 
         with open(pkl_path, 'rb') as f:
             data = pickle.load(f)
+        if not isinstance(data, dict):
+            raise ValueError("Invalid Evolving Skill Memory PKL payload")
 
-        # Restore state
-        self.max_size = data.get('max_size', self.max_size)
-        self.include_failures = data.get('include_failures', self.include_failures)
-        self.min_score_delta = data.get('min_score_delta', self.min_score_delta)
+        stored_max_size = int(data.get('max_size', self.max_size))
+        stored_min_score_delta = float(
+            data.get('min_score_delta', self.min_score_delta)
+        )
+        if stored_max_size <= 0 or stored_min_score_delta <= 0:
+            raise ValueError("Invalid Evolving Skill Memory limits in PKL snapshot")
+        if stored_max_size != self.max_size:
+            logger.info(
+                "Loading memory saved with max_size=%d under runtime max_size=%d; "
+                "the runtime limit remains authoritative",
+                stored_max_size,
+                self.max_size,
+            )
+        if stored_min_score_delta != self.min_score_delta:
+            logger.info(
+                "Loading memory saved with min_score_delta=%g under runtime "
+                "min_score_delta=%g; the runtime threshold remains authoritative",
+                stored_min_score_delta,
+                self.min_score_delta,
+            )
 
-        self.experiences = {
-            task: [SkillEntry.from_dict(exp_data) for exp_data in exps]
-            for task, exps in data.get('experiences', {}).items()
-        }
+        def is_accepted_skill(exp: SkillEntry) -> bool:
+            """Return whether a serialized entry is a successful skill."""
+            objective_deltas = exp.objective_deltas or {}
+            if objective_deltas:
+                task_properties = exp.task.split('+')
+                if set(objective_deltas) != set(task_properties):
+                    return False
+                return all(
+                    float(objective_deltas[prop]) >= self.min_score_delta
+                    for prop in task_properties
+                )
+            task = exp.task
+            if '+' in task:
+                return False
+            score_delta = float(exp.score_delta)
+            if task == 'sa':
+                score_delta = -score_delta
+            return score_delta >= self.min_score_delta
 
-        self.pending_for_gpt = [
-            SkillEntry.from_dict(exp_data)
-            for exp_data in data.get('pending_for_gpt', [])
+        stored_experiences = data.get('experiences', {})
+        if not isinstance(stored_experiences, dict):
+            raise ValueError("Invalid experiences mapping in PKL snapshot")
+
+        parsed_experiences: Dict[str, List[SkillEntry]] = defaultdict(list)
+        stored_count = 0
+        retained_count = 0
+        for task, serialized_entries in stored_experiences.items():
+            if not isinstance(task, str) or not isinstance(serialized_entries, list):
+                raise ValueError("Invalid task bucket in PKL snapshot")
+            stored_count += len(serialized_entries)
+            for serialized_entry in serialized_entries:
+                entry = SkillEntry.from_dict(serialized_entry)
+                if entry.task != task:
+                    raise ValueError(
+                        f"SkillEntry task {entry.task!r} does not match bucket {task!r}"
+                    )
+                structurally_valid = skill_transition_rejection_reason(
+                    entry.before_smiles,
+                    entry.after_smiles,
+                    entry.score_before,
+                    entry.score_after,
+                    entry.score_delta,
+                    entry.objective_deltas,
+                ) is None
+                if is_accepted_skill(entry) and structurally_valid:
+                    parsed_experiences[task].append(entry)
+                    retained_count += 1
+
+        self.experiences = parsed_experiences
+
+        all_ids = [
+            exp.exp_id
+            for experiences in self.experiences.values()
+            for exp in experiences
         ]
+        seen_ids: Set[str] = set()
+        duplicate_ids: Set[str] = set()
+        for exp_id in all_ids:
+            if exp_id in seen_ids:
+                duplicate_ids.add(exp_id)
+            seen_ids.add(exp_id)
+        if duplicate_ids:
+            sample = ", ".join(sorted(duplicate_ids)[:3])
+            raise ValueError(
+                "Duplicate experience IDs in PKL snapshot; refusing ambiguous "
+                f"summary relinking (examples: {sample})"
+            )
 
-        self.fg_statistics = data.get('fg_statistics', {})
+        invalidated = 0
+        validated_experiences: Dict[str, List[SkillEntry]] = defaultdict(list)
+        for task, experiences in self.experiences.items():
+            for exp in experiences:
+                record, _ = validate_gpt_summary_payload(
+                    exp, exp.gpt_summary_plan,
+                )
+                if record is None or record['summary'] != exp.gpt_summary:
+                    invalidated += 1
+                    continue
+                exp.gpt_summary = str(record['summary'])
+                exp.gpt_evidence_ids = list(record['evidence_ids'])
+                exp.gpt_evidence_hash = str(record['evidence_hash'])
+                exp.gpt_summary_plan = dict(record['summary_plan'])
+                exp.compute_indices()
+                if exp.before_fingerprint is None:
+                    invalidated += 1
+                    continue
+                validated_experiences[task].append(exp)
+        self.experiences = validated_experiences
 
-        # Restore SVS tracking state (with defaults for backward compatibility)
-        if 'svs_config' in data:
-            self.svs_config.update(data['svs_config'])
-        self._total_retrieval_count = data.get('_total_retrieval_count', 0)
+        deduplicated: Dict[str, List[SkillEntry]] = defaultdict(list)
+        pair_index = {}
+        for task, experiences in self.experiences.items():
+            for exp in experiences:
+                key = self._get_smiles_key(exp)
+                existing = pair_index.get(key) if key is not None else None
+                if existing is None:
+                    deduplicated[task].append(exp)
+                    if key is not None:
+                        pair_index[key] = exp
+                else:
+                    self._merge_experience(existing, exp)
+        self.experiences = deduplicated
 
-        print(f"Loaded experience pool with {self.get_pool_stats()['total_experiences']} experiences")
+        for task in list(self.experiences):
+            if len(self.experiences[task]) > self.max_size:
+                self._trim_task_locked(task)
+        self._rebuild_canonical_pair_index_locked()
+
+        discarded_count = stored_count - retained_count
+        if discarded_count:
+            logger.info(
+                "Discarded %d entries that did not satisfy the skill-memory contract",
+                discarded_count,
+            )
+        if invalidated:
+            logger.warning(
+                "Discarded %d stored entries without a valid evidence-bound summary",
+                invalidated,
+            )
+        logger.info("Evolving Skill Memory loaded from %s", pkl_path)
 
 
 # ============================================================
 # GPT Summary Generation
 # ============================================================
 
-GPT_SUMMARY_PROMPT = """Analyze this molecular transformation for {task} optimization:
+def build_summary_evidence(exp: SkillEntry) -> Dict[str, Dict[str, Any]]:
+    """Recompute the facts GPT may cite from the two source molecules.
 
-=== Molecules ===
-Before: {before_smiles}
-After:  {after_smiles}
-Score:  {score_before:.3f} -> {score_after:.3f} ({score_delta:+.3f})
+    Stored MCS labels are intentionally excluded: a maximum common
+    substructure can be ambiguous, whereas every fact below is recomputed from
+    RDKit descriptors or an explicit RDKit/SMARTS match.
+    """
+    before = Chem.MolFromSmiles(exp.before_smiles)
+    after = Chem.MolFromSmiles(exp.after_smiles)
+    if before is None or after is None:
+        return {}
 
-=== MCS Analysis ===
-Modification: {modification_type}
-- Removed: {removed_fragment}
-- Added:   {added_fragment}
+    catalog: Dict[str, Dict[str, Any]] = {}
 
-=== Scaffold Analysis ===
-Before Scaffold: {before_scaffold}
-After Scaffold:  {after_scaffold}
-Scaffold Type: {scaffold_type}
+    objective_deltas = dict(exp.objective_deltas)
+    if not objective_deltas:
+        delta = -float(exp.score_delta) if exp.task == 'sa' else float(exp.score_delta)
+        objective_deltas = {exp.task: delta}
+    for objective, delta in sorted(objective_deltas.items()):
+        delta = float(delta)
+        if delta <= 0:
+            continue
+        evidence_id = f"objective.{_evidence_slug(objective)}"
+        catalog[evidence_id] = {
+            "kind": "objective",
+            "source": "recorded_direction_normalized_delta",
+            "text": (
+                f"the observed direction-normalized {objective.upper()} "
+                f"improvement of {delta:+.3f}"
+            ),
+        }
 
-=== Functional Group Changes ===
-- Removed: {fg_removed}
-- Added:   {fg_added}
+    fg_diff = compute_fg_diff(exp.before_smiles, exp.after_smiles)
+    removed_names = FunctionalGroupPruner.prune(
+        [name for name, delta in fg_diff.items() if delta < 0]
+    )
+    added_names = FunctionalGroupPruner.prune(
+        [name for name, delta in fg_diff.items() if delta > 0]
+    )
+    for direction, names in (("removed", removed_names), ("added", added_names)):
+        for name in sorted(names):
+            count = abs(int(fg_diff[name]))
+            action = "removing" if direction == "removed" else "adding"
+            occurrence = "occurrence" if count == 1 else "occurrences"
+            evidence_id = f"fg.{direction}.{_evidence_slug(name)}"
+            catalog[evidence_id] = {
+                "kind": "functional_group",
+                "source": "rdkit_fragments_or_smarts",
+                "text": f"{action} {count} {occurrence} of {map_fg_name(name)}",
+            }
 
-=== Property Changes ===
-- MW: {mw_change:+.1f} Da | Rings: {ring_changes:+d}
-- PSA: {psa_change:+.1f} A2 | HBD: {hbd_change:+d} | HBA: {hba_change:+d}
+    ring_delta = after.GetRingInfo().NumRings() - before.GetRingInfo().NumRings()
+    if ring_delta:
+        action = "increasing" if ring_delta > 0 else "decreasing"
+        catalog["rings.delta"] = {
+            "kind": "ring_count",
+            "source": "rdkit_ring_info",
+            "text": f"{action} the RDKit ring count by {abs(ring_delta)}",
+        }
 
-Result: {result}
+    def add_float_delta(
+        evidence_id: str,
+        label: str,
+        value: float,
+        unit: str,
+        tolerance: float = 0.05,
+    ) -> None:
+        if abs(value) < tolerance:
+            return
+        action = "increasing" if value > 0 else "decreasing"
+        suffix = f" {unit}" if unit else ""
+        catalog[evidence_id] = {
+            "kind": "property",
+            "source": "rdkit_descriptor",
+            "text": f"{action} {label} by {abs(value):.1f}{suffix}",
+        }
 
-=== Task ===
-Generate ONE actionable strategy sentence following this format:
+    add_float_delta(
+        "property.mw",
+        "molecular weight",
+        Descriptors.MolWt(after) - Descriptors.MolWt(before),
+        "Da",
+    )
+    add_float_delta(
+        "property.tpsa",
+        "topological polar surface area",
+        Descriptors.TPSA(after) - Descriptors.TPSA(before),
+        "Å²",
+    )
 
-CONSTRAINTS:
-1. Focus on the 1-2 MOST IMPORTANT functional group changes
-2. Format: "[Action] [What] [Where (if clear)] to [Effect]"
-3. If scaffold_type is "scaffold_hop", mention the core change (e.g., "Replace benzene with pyridine").
-4. Use the Removed/Added Fragment from MCS for precise description.
-5. If location is clear from MCS, specify it (e.g., "on the aromatic ring").
+    integer_properties = (
+        ("property.hbd", "hydrogen-bond donor count", rdMolDescriptors.CalcNumHBD),
+        ("property.hba", "hydrogen-bond acceptor count", rdMolDescriptors.CalcNumHBA),
+        (
+            "property.rotatable_bonds",
+            "rotatable-bond count",
+            rdMolDescriptors.CalcNumRotatableBonds,
+        ),
+    )
+    for evidence_id, label, calculator in integer_properties:
+        delta = int(calculator(after) - calculator(before))
+        if not delta:
+            continue
+        action = "increasing" if delta > 0 else "decreasing"
+        catalog[evidence_id] = {
+            "kind": "property",
+            "source": "rdkit_descriptor",
+            "text": f"{action} {label} by {abs(delta)}",
+        }
 
-EXAMPLES:
-- "Replace benzene core with pyridine to improve water solubility and {task}." (scaffold_hop)
-- "Add fluorine (-F) to the aromatic ring to enhance metabolic stability." (addition)
-- "Remove the sulfonamide group from aromatic ring to reduce polar surface area." (removal)
-- "Replace methoxy (-OCH3) with fluorine (-F) to decrease MW and improve {task}." (replacement)
+    atom_delta = defaultdict(int)
+    for atom in after.GetAtoms():
+        atom_delta[atom.GetSymbol()] += 1
+    for atom in before.GetAtoms():
+        atom_delta[atom.GetSymbol()] -= 1
+    for symbol, delta in sorted(atom_delta.items()):
+        if not delta:
+            continue
+        action = "adding" if delta > 0 else "removing"
+        occurrence = "occurrence" if abs(delta) == 1 else "occurrences"
+        catalog[f"atoms.{_evidence_slug(symbol)}"] = {
+            "kind": "atom_count",
+            "source": "rdkit_atom_count",
+            "text": f"{action} {abs(delta)} {symbol} atom {occurrence}",
+        }
 
-Focus on: WHAT changed, WHERE (if clear from MCS), and WHY it improves {task}:"""
+    return catalog
+
+
+def _summary_evidence_hash(
+    exp: SkillEntry,
+    catalog: Dict[str, Dict[str, Any]],
+    plan: Dict[str, Any],
+) -> str:
+    before = Chem.MolToSmiles(
+        Chem.MolFromSmiles(exp.before_smiles), canonical=True, isomericSmiles=True
+    )
+    after = Chem.MolToSmiles(
+        Chem.MolFromSmiles(exp.after_smiles), canonical=True, isomericSmiles=True
+    )
+    source = {
+        "task": sorted(part.strip() for part in exp.task.split('+') if part.strip()),
+        "before": before,
+        "after": after,
+        "plan": plan,
+        "selected_evidence": {
+            evidence_id: catalog[evidence_id]
+            for evidence_id in (
+                plan["change_evidence_ids"] + plan["objective_evidence_ids"]
+            )
+        },
+    }
+    return hashlib.sha256(
+        json.dumps(source, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+
+
+def validate_gpt_summary_payload(
+    exp: SkillEntry, payload: Any
+) -> Tuple[Optional[Dict[str, Any]], str]:
+    """Validate a GPT-authored action sentence and its evidence bindings.
+
+    The sentence remains free natural language. The structured evidence IDs
+    are checked against facts recomputed from the molecule pair so summaries
+    with missing or invalid evidence never become retrievable.
+    """
+    if not isinstance(payload, dict):
+        return None, "response_not_object"
+    required_fields = {
+        "usable", "summary", "change_evidence_ids", "objective_evidence_ids",
+    }
+    if set(payload) != required_fields:
+        return None, "unexpected_response_fields"
+
+    usable = payload.get("usable")
+    if not isinstance(usable, bool):
+        return None, "invalid_usable"
+    if not usable:
+        return None, "model_marked_not_usable"
+
+    summary = payload.get("summary")
+    change_ids = payload.get("change_evidence_ids")
+    objective_ids = payload.get("objective_evidence_ids")
+    if not isinstance(summary, str):
+        return None, "invalid_summary"
+    summary = summary.strip()
+    if not 12 <= len(summary) <= 500 or "\n" in summary or "\r" in summary:
+        return None, "invalid_summary"
+    if summary[-1] not in ".!?":
+        return None, "summary_not_one_sentence"
+    if re.search(r"[.!?]\s+\S", summary[:-1]):
+        return None, "summary_not_one_sentence"
+    if "{{" in summary or "}}" in summary:
+        return None, "invalid_summary"
+    for evidence_ids in (change_ids, objective_ids):
+        if (
+            not isinstance(evidence_ids, list)
+            or any(not isinstance(item, str) for item in evidence_ids)
+            or len(set(evidence_ids)) != len(evidence_ids)
+        ):
+            return None, "invalid_evidence_ids"
+    if (
+        not 1 <= len(change_ids) <= 3
+        or not 1 <= len(objective_ids) <= 3
+        or len(change_ids) + len(objective_ids) > 4
+    ):
+        return None, "invalid_evidence_count"
+
+    catalog = build_summary_evidence(exp)
+    evidence_ids = change_ids + objective_ids
+    if len(set(evidence_ids)) != len(evidence_ids):
+        return None, "duplicate_evidence_id"
+    if any(evidence_id not in catalog for evidence_id in evidence_ids):
+        return None, "unknown_evidence_id"
+    if any(catalog[item]["kind"] == "objective" for item in change_ids):
+        return None, "objective_in_change_evidence"
+    if any(catalog[item]["kind"] != "objective" for item in objective_ids):
+        return None, "nonobjective_in_objective_evidence"
+
+    expected_objective_ids = {
+        f"objective.{_evidence_slug(objective)}"
+        for objective in EvolvingSkillMemory._task_signature(exp.task)
+    }
+    if len(expected_objective_ids) > 3:
+        return None, "unsupported_objective_count"
+    if set(objective_ids) != expected_objective_ids:
+        return None, "incomplete_objective_evidence"
+
+    plan = {
+        "usable": True,
+        "summary": summary,
+        "change_evidence_ids": list(change_ids),
+        "objective_evidence_ids": list(objective_ids),
+    }
+
+    return {
+        "summary": summary,
+        "evidence_ids": list(evidence_ids),
+        "evidence_hash": _summary_evidence_hash(exp, catalog, plan),
+        "summary_plan": plan,
+    }, ""
+
+
+def _structured_summary_response_format(
+    catalog: Dict[str, Dict[str, Any]]
+) -> Dict[str, Any]:
+    change_ids = sorted(
+        evidence_id for evidence_id, item in catalog.items()
+        if item["kind"] != "objective"
+    )
+    objective_ids = sorted(
+        evidence_id for evidence_id, item in catalog.items()
+        if item["kind"] == "objective"
+    )
+    return {
+        "type": "json_schema",
+        "json_schema": {
+            "name": "molmem_skill_summary",
+            "strict": True,
+            "schema": {
+                "type": "object",
+                "properties": {
+                    "usable": {
+                        "type": "boolean",
+                    },
+                    "summary": {
+                        "type": "string",
+                        "description": (
+                            "One actionable sentence whose structural claims are "
+                            "fully supported by the selected change evidence."
+                        ),
+                    },
+                    "change_evidence_ids": {
+                        "type": "array",
+                        "description": "The smallest evidence set that entails the action.",
+                        "items": {"type": "string", "enum": change_ids},
+                    },
+                    "objective_evidence_ids": {
+                        "type": "array",
+                        "items": {"type": "string", "enum": objective_ids},
+                    },
+                },
+                "required": [
+                    "usable", "summary", "change_evidence_ids",
+                    "objective_evidence_ids",
+                ],
+                "additionalProperties": False,
+            },
+        },
+    }
 
 
 def format_gpt_prompt(exp: SkillEntry) -> str:
-    """Format experience into GPT prompt with type-safe values.
+    """Ask GPT for one free action sentence plus verifiable evidence IDs."""
+    catalog = build_summary_evidence(exp)
+    change_evidence = {
+        evidence_id: {"kind": item["kind"], "fact": item["text"]}
+        for evidence_id, item in catalog.items()
+        if item["kind"] != "objective"
+    }
+    objective_evidence = {
+        evidence_id: {"kind": item["kind"], "fact": item["text"]}
+        for evidence_id, item in catalog.items()
+        if item["kind"] == "objective"
+    }
+    fg_removed = [
+        map_fg_name(name) for name in (exp.functional_groups_removed or [])
+    ]
+    fg_added = [
+        map_fg_name(name) for name in (exp.functional_groups_added or [])
+    ]
+    objective_deltas = {
+        name: float(value)
+        for name, value in sorted((exp.objective_deltas or {}).items())
+    }
+    return f"""Identify the ONE most important coherent source-to-target structural
+action in this successful molecular transformation. Prefer a concrete, local,
+transferable edit that could plausibly matter for the task over a list of every
+difference. If the pair is too ambiguous, too global, or has no reliable
+reusable structural action, set usable to false.
 
-    Applies name mapping for RDKit fragments and cleans up MCS atom soup.
-    """
-    # Map RDKit fragment names to human-readable descriptions
-    fg_removed = [map_fg_name(fg) for fg in (exp.functional_groups_removed or [])]
-    fg_added = [map_fg_name(fg) for fg in (exp.functional_groups_added or [])]
+When usable is true, write summary yourself as ONE concise, self-contained,
+actionable sentence. State only the structural edit; a qualitative effect is
+optional and should be included only when directly supported. Do not include
+scores, numerical changes, or a list of descriptors. Do not copy internal
+detector labels into the sentence; translate only confidently recognized
+chemistry into standard language. Do not claim a mechanism or causality, and do
+not use framing such as "on a similar scaffold" or "in the source example".
+Describe exactly one edit, normally as one add/remove/replace/convert operation;
+never combine separate edits with "and", "while", or a second action clause. If
+multiple coupled edits cannot be reduced to one faithful transferable action,
+set usable to false. Do not guess an approximate chemical name when the local
+structure is unclear.
 
-    # Clean up MCS fragment atom soup
-    removed_frag = clean_fragment_string(exp.removed_fragment or 'none')
-    added_frag = clean_fragment_string(exp.added_fragment or 'none')
+Return only a JSON object with usable, summary, ordered change_evidence_ids, and
+ordered objective_evidence_ids. When usable is true, select one to three change
+evidence IDs that directly support the chosen action, using the smallest useful
+set (normally one or two). Every structural noun and edit direction in the
+summary must be entailed by those selected facts; never attach valid evidence
+IDs to an unrelated claim. Do not select a descriptor merely because it changed.
+Always include every objective
+evidence ID for auditing, but the summary does not need to repeat the objective
+or its value. When usable is false, return an empty summary and empty
+change_evidence_ids. The numeric and descriptor information below is context for
+choosing the action, never the action's identity.
 
-    return GPT_SUMMARY_PROMPT.format(
-        task=exp.task,
-        before_smiles=exp.before_smiles,
-        after_smiles=exp.after_smiles,
-        score_before=float(exp.score_before) if exp.score_before else 0.0,
-        score_after=float(exp.score_after) if exp.score_after else 0.0,
-        score_delta=float(exp.score_delta) if exp.score_delta else 0.0,
-        # MCS analysis (cleaned)
-        modification_type=exp.modification_type or 'unknown',
-        removed_fragment=removed_frag if removed_frag else 'none',
-        added_fragment=added_frag if added_frag else 'none',
-        # Scaffold analysis
-        before_scaffold=exp.before_scaffold or 'none',
-        after_scaffold=exp.after_scaffold or 'none',
-        scaffold_type=exp.scaffold_type or 'unknown',
-        # Functional groups (mapped to readable names)
-        fg_removed=fg_removed,
-        fg_added=fg_added,
-        # Properties
-        mw_change=float(exp.mw_change) if exp.mw_change else 0.0,
-        ring_changes=int(exp.ring_changes) if exp.ring_changes else 0,
-        psa_change=float(exp.psa_change) if exp.psa_change else 0.0,
-        hbd_change=int(exp.hbd_change) if exp.hbd_change else 0,
-        hba_change=int(exp.hba_change) if exp.hba_change else 0,
-        result="SUCCESS" if exp.success else "FAILURE"
-    )
+=== Task and observed outcome (context only) ===
+Task: {exp.task}
+Score: {float(exp.score_before):.3f} -> {float(exp.score_after):.3f} ({float(exp.score_delta):+.3f})
+Direction-normalized objective deltas: {json.dumps(objective_deltas, sort_keys=True)}
+
+=== Molecules ===
+Before SMILES: {exp.before_smiles}
+After SMILES:  {exp.after_smiles}
+
+=== MCS-derived context (may be ambiguous; do not force it) ===
+Modification: {exp.modification_type or 'unknown'}
+Removed fragment: {exp.removed_fragment or 'none'}
+Added fragment: {exp.added_fragment or 'none'}
+
+=== Scaffold context ===
+Before scaffold: {exp.before_scaffold or 'none'}
+After scaffold:  {exp.after_scaffold or 'none'}
+Scaffold type: {exp.scaffold_type or 'unknown'}
+
+=== Functional-group context ===
+Removed: {json.dumps(fg_removed)}
+Added: {json.dumps(fg_added)}
+
+=== Descriptor changes (context only; do not list in summary) ===
+MW: {float(exp.mw_change):+.1f} Da | Rings: {int(exp.ring_changes):+d}
+TPSA: {float(exp.psa_change):+.1f} A2 | HBD: {int(exp.hbd_change):+d} | HBA: {int(exp.hba_change):+d}
+
+=== Verifiable change evidence ===
+{json.dumps(change_evidence, indent=2, sort_keys=True)}
+=== Objective evidence (include all IDs for audit) ===
+{json.dumps(objective_evidence, indent=2, sort_keys=True)}"""
 
 
-# ============================================================
-# Prompt Injection Formatting
-# ============================================================
-
-def format_hints_for_prompt(experiences: List[SkillEntry],
-                            task: str,
-                            include_failures: bool = False) -> str:
+def format_hints_for_prompt(experiences: List[SkillEntry], task: str) -> str:
     """
     Format experiences into prompt hints.
 
-    Only includes experiences that have GPT-generated summaries.
-    Returns empty string if no relevant experiences with summaries are found.
+    Only locally evidence-validated GPT summaries may reach the policy prompt.
 
     Args:
         experiences: List of relevant experiences
         task: Current task type
-        include_failures: Whether to include failure strategies (default False)
 
     Returns:
         Formatted string to inject into prompt, or empty string if no valid experiences
     """
-    if not experiences:
-        return ""
-
-    # Filter only experiences with GPT summaries (no fallback to raw FG lists)
-    success_exps_with_summary = [e for e in experiences if e.success and e.gpt_summary]
-
-    # If no experiences with GPT summaries, return empty (don't force add hints)
-    if not success_exps_with_summary:
+    validated = [
+        exp for exp in experiences
+        if EvolvingSkillMemory._is_retrievable(exp)
+    ]
+    if not validated:
         return ""
 
     lines = [f"\n=== Potential Useful Strategies for {task} ==="]
 
-    for i, exp in enumerate(success_exps_with_summary[:5], 1):
-        lines.append(f"{i}. {exp.gpt_summary}")
+    for index, exp in enumerate(validated, 1):
+        lines.append(f"{index}. {exp.gpt_summary}")
 
     lines.append("\nThese strategies may not always apply. Use them as reference when appropriate.\n")
 
@@ -2238,8 +2364,8 @@ def extract_experience_from_trajectory(
     score_before: float,
     score_after: float,
     task: str,
-    success: bool,
-    epoch: int = 0
+    epoch: int = 0,
+    objective_deltas: Optional[Dict[str, float]] = None,
 ) -> SkillEntry:
     """
     Create a SkillEntry from trajectory data.
@@ -2251,13 +2377,24 @@ def extract_experience_from_trajectory(
         score_before: Initial score
         score_after: Final score
         task: Task type
-        success: Whether optimization succeeded
         epoch: Current training epoch
+        objective_deltas: Direction-normalized per-objective changes
 
     Returns:
         SkillEntry object
     """
-    # Analyze transformation
+    score_delta = score_after - score_before
+    rejection_reason = skill_transition_rejection_reason(
+        before_smiles,
+        after_smiles,
+        score_before,
+        score_after,
+        score_delta,
+        objective_deltas,
+    )
+    if rejection_reason is not None:
+        raise ValueError(f"Invalid skill transition: {rejection_reason}")
+
     analysis = analyze_transformation(before_smiles, after_smiles)
 
     exp = SkillEntry(
@@ -2268,8 +2405,8 @@ def extract_experience_from_trajectory(
         trajectory=trajectory,
         score_before=score_before,
         score_after=score_after,
-        score_delta=score_after - score_before,
-        success=success,
+        score_delta=score_delta,
+        objective_deltas=objective_deltas or {},
         atom_changes=analysis.get('atom_changes', {}),
         ring_changes=analysis.get('ring_changes', 0),
         mw_change=analysis.get('mw_change', 0.0),
@@ -2280,12 +2417,10 @@ def extract_experience_from_trajectory(
         stereo_centers_change=analysis.get('stereo_centers_change', 0),
         functional_groups_removed=analysis.get('fg_removed', []),
         functional_groups_added=analysis.get('fg_added', []),
-        # MCS analysis
         mcs_smarts=analysis.get('mcs_smarts', ''),
         removed_fragment=analysis.get('removed_fragment', ''),
         added_fragment=analysis.get('added_fragment', ''),
         modification_type=analysis.get('modification_type', ''),
-        # Scaffold analysis
         before_scaffold=analysis.get('before_scaffold', ''),
         after_scaffold=analysis.get('after_scaffold', ''),
         scaffold_changed=analysis.get('scaffold_changed', False),
@@ -2293,7 +2428,6 @@ def extract_experience_from_trajectory(
         scaffold_type=analysis.get('scaffold_type', ''),
     )
 
-    # Compute retrieval indices
     exp.compute_indices()
 
     return exp

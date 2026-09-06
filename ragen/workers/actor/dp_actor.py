@@ -308,11 +308,7 @@ class DataParallelPPOActor(BasePPOActor):
                         data = {**data.batch.to(torch.cuda.current_device()), **data.non_tensor_batch}
                     else:
                         data = data.to(torch.cuda.current_device())  # actor device is cpu when using offload
-                    responses = data["responses"]
-                    response_length = responses.size(1)
-                    attention_mask = data["attention_mask"]
                     response_mask = data["response_mask"]
-                    # response_mask = attention_mask[:, -response_length:]
                     old_log_prob = data["old_log_probs"]
                     advantages = data["advantages"]
 
@@ -435,18 +431,9 @@ class DataParallelPPOActor(BasePPOActor):
                                 else:
                                     token_level_rewards = data.get("rm_scores", torch.zeros_like(response_mask, dtype=torch.float32))
                                 
-                                # Additional debug: check if rewards are at turn endings
-                                if (token_level_rewards != 0).any():
-                                    non_zero_indices = (token_level_rewards != 0).nonzero(as_tuple=True)
-                                    # Print first few positions as examples
-                                    if len(non_zero_indices[0]) > 0:
-                                        sample_positions = list(zip(non_zero_indices[0][:5].tolist(), non_zero_indices[1][:5].tolist()))
-                                
                                 # Convert numpy arrays to tensors
                                 if isinstance(best_molecule_scores, np.ndarray):
                                     best_molecule_scores = torch.from_numpy(best_molecule_scores).to(torch.cuda.current_device())
-                                if isinstance(group_ids, np.ndarray):
-                                    group_ids = group_ids  # Keep as numpy for now, converted in build_preference_pairs
                                 
                                 # Build preference pairs
                                 preference_data = build_preference_pairs(
@@ -460,12 +447,7 @@ class DataParallelPPOActor(BasePPOActor):
                                     max_inter_pairs_per_molecule=pref_config.get('max_inter_pairs_per_molecule', 20)
                                 )
                                 
-                                # Count pairs for metrics
-                                total_pairs = len(preference_data["pairs"])
-                                intra_pairs = sum(1 for pair in preference_data["pairs"] if pair[2] != 0 or pair[3] != 0)
-                                inter_pairs = total_pairs - intra_pairs
-                                
-                                if total_pairs > 0:
+                                if preference_data["pairs"]:
                                     # Compute preference loss
                                     pref_loss, pref_metrics = compute_lipo_lambda_loss(
                                         log_probs=log_prob,

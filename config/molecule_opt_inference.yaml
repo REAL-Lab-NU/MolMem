@@ -1,0 +1,48 @@
+defaults:
+  - molecule_opt
+  - _self_
+
+molecule_opt_task: qed
+molecule_opt_similarity_threshold: 0.4
+model_path: AlexanderWang915/qwen2.5-1.5b-moloptins
+skill_memory_path: ""
+inference_output: ./inference_results.json
+test_size: 200
+
+evaluation:
+  oracle_budget: 500
+  generations: 20
+  rollouts_per_generation: 32
+  base_temperature: 0.9
+  temperature_increment: 0.1
+  max_temperature: 2.0
+  seed: 42
+
+data:
+  val_file: "./data/${molecule_opt_task}/test/${molecule_opt_task}_test_${test_size}.parquet"
+
+es_manager:
+  val:
+    env_groups: ${test_size}
+    group_size: ${evaluation.rollouts_per_generation}
+    env_configs:
+      tags: ["MoleculeOptimization"]
+      n_groups:
+        - ${test_size}
+
+evolving_skill_memory:
+  save_path: ${skill_memory_path}
+  hints:
+    trigger_mode_val: "on_stuck"
+
+actor_rollout_ref:
+  rollout:
+    val_kwargs:
+      do_sample: true
+      temperature: ${evaluation.base_temperature}
+      top_p: 0.95
+      top_k: 50
+
+agent_proxy:
+  max_turn: 5
+  max_actions_per_turn: 1

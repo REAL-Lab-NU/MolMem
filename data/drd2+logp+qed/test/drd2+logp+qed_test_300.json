@@ -1,0 +1,8402 @@
+[
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "C[C@H](NC(=O)CN1CCN(c2cccc[nH+]2)CC1)c1cc2ccccc2o1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7532708359766394,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.46233740229334463,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.05042986885779507,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 4,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "O=C(CCCc1c[nH]c2ccccc12)N[C@H]1CC[NH+]2CCCC[C@H]12",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7711441095463677,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.7307712929100494,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.07668550173425126,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 0,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "O=C(N[C@H]1c2ccccc2CC[C@H]1n1cc[nH+]c1)c1cc(C2CC2)[nH]n1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7600970157057872,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.1929859874235174,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.14680175010389063,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 3,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "Fc1cccc(Cl)c1[C@@H]1[C@@H]2[NH+]=c3ccccc3=C2CCN1Cc1ccccn1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7357903217492195,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.468313874913298,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.09874332996929869,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 1,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "C[NH+]1CCN(CCCNC(=O)c2cc(C3CC3)nc3ccccc23)CC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7638824147296848,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.8712937028670154,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.0914400944314295,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 1,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "c1ccc(-c2cccc(C[NH+]3CCC[C@H](c4cn[nH]c4)C3)c2)nc1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.775725275285765,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.2369178956547646,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.073373610614621,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 5,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CC[C@@H]([NH2+]CCC[C@H]1CCCC[C@@H]1O)c1ccc2c(c1)CC(=O)N2C",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7463379300812351,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.2980080375558523,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.03188491356442083,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 5,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CCCc1c(C[NH2+]C)cnn1[C@@H](C)CC",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7583960529830798,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.8794422751866802,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.053466179227005244,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 0,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "COc1cccc([C@@H](O)CNC(=O)NC[C@@H]2C[C@@]23CCc2ccccc23)c1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7361394341408488,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.43555726133935546,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.06936154865577829,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 1,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "COC(=O)[C@H]1CCN(C[C@@H]2Cc3cc(F)ccc3O2)C1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7882687176113388,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.2913354804552486,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.0390634417503371,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 5,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "C[C@H](C[NH+]1CCCCC1)NC(=O)N[C@H](C)c1ccc(-c2ccncc2)cc1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7349221281850599,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.779812647045903,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.05515701486846587,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 4,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "COc1cc2c(cc1OC)C[NH+]([C@H]1CCCN(Cc3cnc(N(C)C)s3)C1)CC2",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7768666462033044,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.711092374608141,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.09978991935524485,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 0,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "OC[C@]1(Cc2ccccc2)CCC[NH+](Cc2cc(Cl)ccc2O)C1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7783507309418327,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.9794115636648901,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.08396872969431737,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 5,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "Cc1cccc2[nH]c(CNC3CC[NH+](C)CC3)nc12",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7572372235200255,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.7433144144395207,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.053805218263558635,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 3,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "Fc1ccc(-c2nnc(C3CCN(Cc4[nH]cc[nH+]4)CC3)o2)cc1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7980878670342978,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.11566881664207485,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.1501113625836896,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 3,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "c1ccc(CSCCC[NH+]2CCC[C@H](c3cn[nH]c3)C2)cc1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7695545107943457,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.3837384251799443,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.11610170373446088,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 3,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "C[C@@H](C[C@@H](O)c1cccs1)NC(=O)NC[C@@H]1CN2CCCC[C@@H]2CO1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7199786785042023,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.9743459860318828,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.1128542048392427,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 5,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "Cc1cc(C[NH+]2CCC(c3cnn(C)c3)CC2)ccc1Oc1cccnc1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7580865722510676,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.05614562536752943,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.046618129318071765,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 3,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "O=C1c2ccccc2C(=O)N1CN1CC[NH+](Cc2c(Cl)cccc2Cl)CC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7915434809003794,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.4246808079526093,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.049647878521591846,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 3,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CCCCn1nc(C)c(C[NH2+]C[C@@H](C)O)c1Cl",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7712166253540544,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.9746992104749403,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.04353130660885728,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 4,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "Cc1noc([C@H]2CCCN(CN3C(=O)NC4(CCC(C(C)(C)C)CC4)C3=O)C2)n1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7801851716385753,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.24408307312133642,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.06494372684192191,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 0,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CC(C)Oc1cccnc1C(=O)N(C)CCCN1CC[NH+](C)CC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7713017418127979,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.921981729523988,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.07513398854396795,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 0,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "C#CCN([C@@H]1C[C@@H](C)C[C@@H](c2ccccc2)C1)[C@@H]1CCS(=O)(=O)C1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7871741555287028,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.415927671615236,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.061511869070688625,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 3,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "C[NH+]1CCC(CNC(=O)N[C@H]2CCC[C@H]2c2ccc(F)cc2)CC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7708424987769547,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.4812136918442125,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.061999957390233,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 5,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "O=C(CN1CCN(CCn2cc[nH+]c2)CC1)c1ccc(Cl)cc1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.751591309999142,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.45343199430950265,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.12473738376075152,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 4,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "C=CC[C@@]1(C(=O)[O-])CCCN(c2nccc(N3CCC(O)CC3)n2)C1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7698369163324116,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.948177292912379,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.034668480516329564,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 2,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "C#CCn1cc(CN(C)C(=O)NC[C@@H]2CCCN(c3ncccn3)C2)cn1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7802575240761257,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.8256801289438673,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.07419549990047222,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 1,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "C=CCOc1ccc(C[NH+]2CCC[C@@H](c3cn[nH]c3)C2)cc1OC",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.763979323177112,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.780234729072348,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.060949654664567754,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 3,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CCOc1ccccc1C[NH2+]C1CCN(CC(=O)NC)CC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7646010663714234,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.2632541285800483,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.05786294252277037,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 4,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CCc1cccc(C)c1NC(=S)NCCC1=c2cc(C)ccc2=[NH+][C@@H]1C",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7023300200742202,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.3393299514572958,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.047705127237713044,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 2,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "COc1ccccc1C(=O)[C@H]1CCC[NH+](Cc2c[nH]nc2C2CCCCC2)C1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7548201897943536,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.7952634381213548,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.032594542771957134,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 1,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CC1CCN([C@H](C[NH+]2CCC(C)CC2)CS(=O)(=O)c2ccc3ccccc3c2)CC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7675166038936906,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.3215355049445606,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.06683029077068585,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 4,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "C[C@@H]1CCCC[C@H]1NC(=O)CN(C)C1CC[NH+](CCc2ccccn2)CC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7574423395178529,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.935148471060948,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.05177729010322212,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 0,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CC1(C)CN(CCC(=O)N2CCN(c3ncccn3)CC2)CC[S@@]1=O",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7673094498812553,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.664691064753922,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.1330352825221654,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 5,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CC(C)Cn1nc(C(=O)N2CCOCC2)c2c1CC[C@@H]([NH2+]CCc1ccc(Cl)cc1)C2",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7109623373843569,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.6553453536682117,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.03699212139805665,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 0,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CCCN1CCO[C@@H](c2ncc([C@@H](C)Cl)c(C)n2)C1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7966504443417053,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.1204437273131026,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.08439358215800283,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 4,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "C[C@H](NC(=O)[C@@H](C)[NH+]1CCN(Cc2cccc(Cl)c2)CC1)c1ccccc1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7989119859884394,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.6909592805021968,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.03217435963042311,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 4,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "C[NH+](C)[C@H]1CCc2[nH]c3c(F)cc(F)cc3c2C1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7649373200711206,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.8638346798876522,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.11166123323797032,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 2,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "C[C@@H]1CC[C@@H](Nc2ccccc2C[NH+]2CCC(CO)CC2)C1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7788037206397658,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.500777984385863,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.03718297893848329,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 5,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CCc1ncnc(N2CCC[C@@H](CCC(=O)N(C)C3CC[NH+](C)CC3)C2)c1F",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7932310976599048,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.9192645187225454,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.031275717037504265,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 0,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "C#CC[NH+]1CCC(Nc2cc(OC)cc(OC)c2)CC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.780164344964374,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.7406289809648556,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.04855972197921804,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 2,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "COC(=O)c1ccc(CN2CCN(CCn3cc[nH+]c3C)CC2)cc1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7401881069708164,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.4487659956845126,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.05083783060408686,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 4,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "COc1ccc(C[NH2+]C[C@@H](C(C)C)N2CCN(C)CC2)cc1O",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7772876648810697,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.6662814908713157,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.0792056151544661,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 3,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "Nc1nc(CCNC(=O)c2ccc(C[NH+]3CCCCC3)cc2)cs1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.738133853885579,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.017031323093883,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.04423973151198239,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 5,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "C=CCOc1ccc2[nH]cc(CC[NH3+])c2c1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7329085048687641,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.3343292476907609,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.03790788047145518,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 1,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "O=C(C[NH+]1CCCC1)NCCn1ncc(-c2ccncc2)c1C1CC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7765329534507471,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.840242421752059,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.10558554234741659,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 1,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CC(C)c1cc(C(=O)NCCCCN2C[C@H](C)O[C@H](C)C2)nn1C",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7753712291710849,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.3129035591912306,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.043100877191801015,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 5,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "Cc1noc(C)c1[C@@H](C)C[NH2+][C@H]1CCc2[nH]c3ccccc3c2C1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7749203903850513,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.8087052247585882,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.07581647433800692,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 5,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CCOc1cc(C)nc(N2CCN(C[C@@H](O)Cn3cccn3)CC2)n1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7846961952248633,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.0467953246705541,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.04316625336923295,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 2,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "COCc1cccc(C[NH2+]Cc2cc[nH]c2)c1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.775510140069359,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.0157365238588012,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.03232006559514796,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 0,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "COc1ccc2ccccc2c1C[NH+]1CCC[C@@H](c2cn[nH]c2)C1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7750163042020896,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.1441423286057537,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.05367825207968574,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 3,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "COc1cc(C[NH2+]C[C@H]2CCC[C@H](O)C2)cc(Br)c1O",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7621883296696714,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.5110605266359036,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.039099317836045144,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 5,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CCNc1cc2c([nH+]n1)CCN(C(=O)Cc1cn3ccsc3n1)C2",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7712660467768411,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.5159919684240704,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.04076230494933298,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 2,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CC(=O)NCCc1ccc([C@@H](C)NC[C@@H]2CN3CCCC[C@@H]3CO2)cc1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7841712604664217,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.2485057482640275,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.09920836970886664,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 5,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "COc1ccc(C[NH+]2CCc3ccc(F)cc3C2)cc1OCCCC#N",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7770044941108515,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.5047483616815418,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.059521101866186615,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 4,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "O=c1c2c3c(sc2ncn1[C@H]1CCC[NH+](Cc2ccccc2)C1)CNCC3",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7234104694996761,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.9160218185105458,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.06458250593291853,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 3,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "c1cnc2ncc(CN3CCO[C@@H](c4nccs4)C3)n2c1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7376249339333124,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.7753398751545053,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.031222282560943563,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 4,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "Cc1cccc(S(=O)(=O)NC[C@@H](c2ccc(F)cc2)N2CC[NH+](C)CC2)c1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7708369118670267,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.38897527242355,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.036996228002282014,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 4,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "C[NH+]1CC[C@H](NC(=O)c2cc(C3CC3)[nH]n2)[C@@H]1c1ccc(Cl)cc1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7894882621906189,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.8648078732026385,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.060204060668820635,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 1,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CCCC[NH+](CC)Cc1ccc2c(c1)COC2",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7937472225608352,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.5265665451735357,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.046046056296118236,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 0,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CCCOC[C@@H]([NH2+]CC)[C@@H]1Cc2ccccc21",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7140595404855763,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.5522432168780105,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.056545395154201664,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 3,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CC1(C)CCCC[C@H]1[NH2+][C@H]1CCc2cc(N)ccc21",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7880236884210408,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.0276922173325722,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.07558214054146913,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 0,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "Cc1cccc([C@@H]2[C@@H]3[NH+]=c4ccccc4=C3CCN2Cc2ccccn2)c1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7678137021101512,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.6894223926890204,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.15600165913709713,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 2,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "COCCC1(C[NH2+]Cc2c(C)cccc2C)CC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.786158771774824,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.47058119031971657,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.0377980130928955,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 3,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "O=C1CCCCN1CN1CCN(c2cc(N3CCOCC3)ncn2)CC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7702473526598019,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.5923798594129941,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.0700490557361062,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 0,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CCc1ccc(-c2n[nH]cc2C[NH+]2CCC[C@H]2c2cc(C)on2)cc1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7525483949936587,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.3111401719786915,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.030701526829020852,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 3,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "C=CC[NH+]1CCC(NC(=O)C[C@H](C)c2cccc(OC)c2)CC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7492847537345468,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.491291281642996,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.03703935290901641,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 4,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "C[C@H]1CCCC[NH+]1Cc1ccccc1CNCc1cnc(N(C)C)s1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7965520272935541,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.2204504980002335,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.06998667992054544,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 3,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "Cc1cccnc1CN1CCN(c2[nH+]ncc3ccccc23)CC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7411157712007509,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.07478786695385073,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.19712514977792306,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 4,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "C[C@H]1C[C@@H]1c1ccc(C[NH+](C)Cc2cc(=O)oc3cc4c(cc23)CCC4)o1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.707419636747227,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.8330950624607389,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.04787820812625421,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 0,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "O=C([C@H]1CN(C(=O)[C@@H]2COc3ccccc3O2)c2ccccc2O1)N1CCOCC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7465464664586877,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.6764614748081861,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.05772096584702115,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 2,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "COc1cc(CCNC(=O)NC[C@H](C)N2CCOCC2)ccc1F",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7881827160648703,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.057608998257932864,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.1143331941327197,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 4,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "COc1ccc(CN2CCO[C@H](Cc3ccc(F)cc3)C2)cc1C(=O)[O-]",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7856706158572537,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.20714370082365297,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.06443407628390786,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 5,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "COc1ccccc1[C@@H](CNS(=O)(=O)c1ccc2c(c1)CCCC2)[NH+]1CCCC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7294212939908759,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.7291168354379423,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.05978612805252558,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 3,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CNC(=O)c1ccc(C[NH2+]CCCN2C[C@@H](C)O[C@H](C)C2)cc1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7238737727903753,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.9770358511081936,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.10127313850347588,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 0,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "Cc1ncccc1Oc1cncc([C@H]2CCCN2C(=O)CN2CCOCC2)n1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7807237563115338,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.22866717485746202,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.04287471146217806,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 2,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "O=C(c1cccc(S(=O)(=O)NCc2ccccc2)c1)N1CCCN(CC(F)(F)F)CC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7274713216110258,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.9636999355983535,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.04927286202051422,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 5,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "C[C@@H]1CN(C(=O)[C@@H]2CCN(c3ccc(F)c(F)c3)C2=O)C[C@@H](C)S1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7669644918028744,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.34036932571547807,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.03821595350568085,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 0,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "Cc1ccc(C(=O)N2CCN(CN3C(=O)[C@H]4CCC[C@H]43)CC2)cc1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7942189555007388,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.20870267564742317,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.04182191410885417,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 0,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CC1CC[NH+](CCCNC(=O)c2cnn3cc(Br)cnc23)CC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.757850297437406,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.7370417450224,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.03658426762367031,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 5,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CC1CC[NH+]([C@@H](CNCc2cnc(N(C)C)s2)c2cccs2)CC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.790398216237754,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.3583812699764184,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.06114885781471744,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 0,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "O=C1CCCN1Cc1ccccc1C[NH2+][C@@H]1CCc2[nH]c3ccccc3c2C1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.708869884387025,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.1306183942369724,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.07873582032512318,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 2,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "C#CCN1C(=O)[C@]2(CC(O)=Nc3[nH]ncc32)c2ccccc21",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.784365999150544,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.9324784846335343,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.04030454039221327,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 5,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CS(=O)(=O)CCN1CCN(c2ccc3nccn3n2)CC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7850906158638867,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.9516084911554312,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.11556401148081455,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 3,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "O=C(NC[C@H](c1ccccc1)[NH+]1CCCC1)c1ccc(O)c(Cl)c1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7778110270426148,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.7450411852871958,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.04654153561542805,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 3,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "C[C@H]1C[C@@H](NC(=O)c2n[nH]c(C3CC3)c2Cl)CC[NH+]1Cc1ccccc1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7527177171992405,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.60644038825181,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.07817560576655978,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 3,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CCN(CC)c1cc(C2CC[NH+](C[C@H]3CC=CCC3)CC2)nc(-c2cnccn2)n1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7154242133833614,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.0532133922422873,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.07795054424517188,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 2,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "Cc1ncn(C[C@@H](C)[NH2+]CCc2c[nH]c3cc(Cl)ccc23)c1C",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7166747546454553,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.4356347444604409,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.1384461051698663,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 0,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CC1CCC(NC(=O)CN2CCN(c3ccc(C(N)=O)nn3)CC2)CC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7871954355313864,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.40987643746220426,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.1536624554350974,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 3,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "Cc1ccc([C@H](O)C[NH+]2CCC(Nc3ccccc3)CC2)c(C)c1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7899310960251253,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.5295222810927558,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.03290397066795334,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 3,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CC[C@H](NCC(=O)NC)c1ccccc1O",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7007430680842619,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.15164394088536937,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.05202518729696133,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 5,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "O=C(NCc1cccc(F)c1)[C@@H]1CCC(=O)N(CCCN2CCOCC2)C1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7804236053172855,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.07860395004037718,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.08365071012773309,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 5,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "C[NH+](C)[C@@H]1CC[C@@H](NC(=O)NCCc2cccc3cccnc23)C1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7713145797648493,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.6162713976424006,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.047700062637020764,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 1,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "Cc1cccc(N2CC[NH+](CC[C@H](C)NS(=O)(=O)c3ccc(F)cc3)CC2)c1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7344578248865645,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.0873579733159704,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.038283240018430593,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 4,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "C#CCN(CC#C)C(=O)C[C@@H]1CCc2ccccc21",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7512626070764835,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.21684120426552456,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.07003945105575089,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 1,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "Fc1ccccc1CCC1CC[NH2+]CC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7788342044342643,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.6522427963160982,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.031114429137473674,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 1,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "C[NH2+]Cc1cn(Cc2ccc(O)cc2)c2ncccc12",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7528678314924035,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.3661203864331315,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.07325957606511631,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 1,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CCCCn1nnnc1CN1CCC[C@H]1Cn1cc(C)cn1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.777838182137583,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.4447044830322451,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.04454491804380345,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 1,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "C[C@@H](NC(=O)[C@@H]1Cc2[nH+]c[nH]c2CN1)c1ccc(Br)cc1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7848908754959251,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.8820198395824463,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.030642349467080686,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 2,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "C[C@H](C[NH2+]C1CC1)Cc1ccc(O)cc1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.74826412137222,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.4541114954589824,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.17082472720570094,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 1,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "COc1ccc([C@H](CNC(=O)c2cc(F)c(F)cc2Cl)[NH+]2CCCCC2)cc1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7195907687500226,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.07382808560541687,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.07996446859974445,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 1,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CC[C@H]([NH2+]CC1CCC1)c1ccc(O)cc1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7839947123037879,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.8619344167523932,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.035848914512913485,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 1,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CCCc1ccc([C@H](O)C(CC)(CC)[NH+](C)C)cc1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.776329461145514,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.7204849912150185,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.0406772436920105,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 1,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "Cc1ccc(C[NH+]2CCC(N3CCC(C(=O)NCc4ccccn4)CC3)CC2)o1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7766222944612114,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.7945403726876885,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.16770678989201057,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 0,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "COc1cc(OC)c(OC)cc1CN1C[C@@H]2CCC[NH+]2C[C@H]1Cc1ccccc1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7769584745735072,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.2674996502326625,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.05234001079264277,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 0,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CC[C@@H](NC1CC[NH+]([C@@H]2CCCC[C@@H]2O)CC1)c1ccc(F)cc1F",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7601066054548505,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.6518422175554566,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.11732321537477304,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 5,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "c1cnc(N2CCN(Cc3cn4ccccc4[nH+]3)CC2)nc1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.719176430863767,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.2258357576560626,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.1562882367641547,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 1,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "C[NH+](C)CCOc1ccc(CN2CCO[C@@H](c3cccc(O)c3)C2)cc1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7882225957913708,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.8621311797947047,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.10644321008688516,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 2,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "C[C@H](CNC(=O)c1cccc2[nH]ccc12)[NH+]1CCCC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7628665503927999,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.9430443346095623,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.09228491641171871,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 2,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CCc1c2n(c3ccc(C)cc13)CC[NH2+][C@H]2C",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7736891141960787,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.1840189351415547,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.03371979190016892,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 3,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "COc1cccc(C(=O)N(C)CCCN2CC[NH+](C)CC2)c1OC",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7612108437793035,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.7223095258801149,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.07220846800298887,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 0,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "Cc1ccn(CC[C@@H]2CCC[C@@H]2O)n1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7955944993277296,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.5645071172248841,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.05247836609858993,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 5,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "Fc1ccc(C[NH2+]CCCCN2CCOCC2)c(F)c1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7613153349413758,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.7635042748550385,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.04033212111536188,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 5,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "C=CCNC(=O)CN1CCN(c2nccn3cnnc23)CC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7536458691864478,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.3281462476706802,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.07609460322281954,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 1,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "N#CCCN(Cc1ccc(N2CCCC2)[nH+]c1)CC1CC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7714221979157839,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.4773836651847996,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.04976849671517168,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 2,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "Clc1ccc(-c2c[nH]c([C@H]3CCCN3CCn3cncn3)[nH+]2)cc1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7740477851704805,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.7079376041530598,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.06487438154892003,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 1,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CCN[C@@H](Cc1ccc(O)cc1)[C@@](C)(CC)[NH+]1CCCC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7158883146836229,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.8995769406570395,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.1719153375008124,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 3,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CCN(CC)S(=O)(=O)c1cccnc1N1CCN(CCO)CC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7641792284664871,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.5138624178396847,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.07919859220634676,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 5,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CCc1[nH]nc2c1[C@H](c1ccc(OC)c(O)c1)C(C#N)=C(N)O2",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7965588642416176,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.3776483678723668,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.05182071969837882,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 5,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CC[C@@H]([NH2+]C)c1ccn(CC(=O)N(CC)C2CC2)c1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7882949318966174,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.9980845253634052,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.034434948200321926,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 4,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "C[NH+](CC(=O)N1CCC[C@H](CCc2ccc(F)c(F)c2)C1)Cc1ccncc1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7901032333872332,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.8713846092409483,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.038825741777453224,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 4,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "c1cc(SCC[C@@H]2CCC[NH2+]C2)ccn1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7846348730972147,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.7853843979093271,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.03157495606154339,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 1,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "C[C@@H]1CN(CCn2c3ccccc3c3cc(Cl)ccc32)CC[NH+]1C",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7717000913452012,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.55748966806976,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.11552794682850763,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 1,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "COC(=O)c1cc(CN2CCC[C@H](C[NH+]3CCC(C)CC3)C2)c[nH]1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7989218751448489,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.9032523875797742,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.04985588479680168,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 0,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "N#C/C=C(\\c1ccccc1)N1CCCN(C(=O)c2ccc(Cl)cc2)CC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7706701844304954,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.2231235742265882,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.08160518771691198,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 2,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "COC1CCN(CC[NH2+]Cc2cnn(-c3ccccc3)n2)CC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.75327706346913,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.4586199309708654,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.03970481196223331,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 4,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "C[C@H](Cc1ccc(C(F)(F)F)cc1)NC(=O)N[C@H]1CC[C@H]([NH+](C)C)C1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7407973299768948,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.282311809394692,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.03680421890376439,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 3,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CCc1c(C[NH3+])cnn1CCC(C)C",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7562183375313248,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.0462040843602987,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.0305295465792196,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 3,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "c1cnc2[nH]cc(C3CC[NH+](Cc4ccc(N5CCOCC5)cc4)CC3)c2c1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7337753359313857,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.25260054304527857,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.0907447862969537,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 0,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CCC[NH+]1CC[C@@H](OCCCc2ccccc2)C1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7252519453564834,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.5914635942335962,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.041092803009644685,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 1,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "COc1ccc(N2CCN(C(=O)CNC(=O)[C@@H]3COc4ccccc4O3)CC2)cc1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7990649133230622,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.08714520347963806,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.07012628765112501,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 4,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CCc1nn(C)c(CC)c1CN1CCN([C@H](C)C(=O)N2CCCCC2)CC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7634960974463875,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.00664210958254588,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.04001847641458317,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 4,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "Cc1ccc(O)c2c1[C@H](C)C[C@H]2[NH2+][C@@H](C)CCCO",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7613551461962378,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.935469291777364,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.14034364368897417,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 0,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CC(C)c1ccc(NC(=O)CC[NH+]2CCN(C[C@H]3CCCO3)CC2)cc1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.774990810000519,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.222453427889426,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.0455788368029145,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 3,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CN(CC1CC1)C(=O)CN1CCN(c2cccc[nH+]2)CC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7920637136203377,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.4263983176473736,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.09562932007868954,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 1,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "COCCOCC[NH+]1CC=C(c2c[nH]c3cc(F)ccc23)CC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.761728308137334,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.6071212166724138,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.05928422892257455,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 5,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "O=C(NC1CCCC1)[C@H](c1ccc(Cl)cc1)N1CC[NH+](C2CCCCC2)CC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.791110123317183,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.2985718224555589,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.050679507125037083,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 1,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "COc1ccc2[nH]cc([C@@H](C)NCC3([NH+]4CCCCC4)CCOCC3)c2c1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7300516830380026,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.1485733563309242,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.09175630897447502,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 5,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "Oc1cccc(C[NH2+][C@H]2CCCC[C@@H]2Cl)c1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.779615909875615,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.4987798789512567,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.05383973306984589,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 2,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "COC1CCN(CC[NH2+]Cc2cc(Cl)c3c(c2)OCCO3)CC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.791995823218238,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.9403039899068979,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.13850904048195967,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 2,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "c1cc2c(c[nH+]1)NC[C@H](C1CCCCC1)N2",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7587036931123966,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.5398775105787514,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.0553558478833158,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 5,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "COc1cccc2ccc(C[NH+]3CCC(N4CCC(C(=O)NC5CC5)CC4)CC3)nc12",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7437860176886675,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.6106524734251546,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.14913938885469977,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 0,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "C[C@@H]1CCC[NH+](Cc2c(O)ccc3c2O/C(=C/c2ccccc2OC(F)F)C3=O)C1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7336889272527495,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.6197188344519751,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.06213220757904277,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 4,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "COc1ccc(C[NH2+][C@H]2CCCc3c2cnn3-c2ccccc2F)cc1O",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7278993385475666,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.19581122569017062,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.032778897411719875,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 3,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "c1ccc2c(C[NH+]3CCC[C@@H](c4cn[nH]c4)C3)coc2c1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.772731921332236,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.8073301960607242,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.05208690254514529,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 4,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "O=C(NCC1([NH+]2CCCCC2)CCOCC1)c1n[nH]c(C2CC2)c1Cl",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7339777555643778,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.898263728268133,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.035011619714379015,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 0,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "Cc1ccccc1[C@@H](NC(=O)NCCN1CCC([NH+](C)C)CC1)C(C)(C)C",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7121729913173624,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.8892967638543079,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.04124974444616372,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 1,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "COc1ccc(OC)c(C[NH+]2CCN(CC(=O)N3c4ccccc4C[C@@H]3C)CC2)c1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7818242983199204,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.2820218552453366,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.08139837681480037,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 3,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "C[C@@H](Cn1cccn1)OC(=O)[C@H](C)N1CCc2ccccc2C1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7945524809762102,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.15160301973529355,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.0843245020205176,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 3,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CN1CCO[C@@H](C(=O)N2CCN(C(=O)c3c(F)cccc3Cl)CC2)C1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7829398787527011,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.49821726900942864,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.03535115827196783,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 0,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "C=CCC[C@@H]([NH2+]C[C@@]1(O)CCc2ccccc21)C1CC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7330968436747507,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.5546972585918661,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.1171664004580584,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 2,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "COc1cc(OC)c(C[NH+]2CCC([C@H](O)c3ccc(F)cc3)CC2)c(OC)c1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7623344683082153,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.6918595507458448,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.09561788399263538,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 4,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "C[C@H]([NH2+]CCC[C@H]1CCCC[C@@H]1O)c1cccs1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7647968831352001,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.1655196528549048,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.0649459914508649,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 3,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CC(C)=CCC[C@H](C)[NH2+]C1CCN([C@H](C)c2ccncc2)CC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7829346762058997,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.5255025070217166,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.19006329131147473,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 5,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "C[C@H]1CC(N2CCO[C@]3(CCc4ccccc43)C2)C[C@@H](C)O1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7953403389888881,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.9014823371161824,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.13986537781340871,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 4,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "COc1c(C)cc(C[NH+](Cc2cccc(O)c2)C2CCC(O)CC2)cc1C",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7328605391767307,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.49903542660852973,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.05932583054889765,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 0,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CC1(C)CN(CCn2cccn2)CC[S@]1=O",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7826788074100881,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.8756727375642352,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.03130459850392581,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 1,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CC(C)[C@@H](CNC(=O)N[C@H](C)c1ccc(Cl)cc1)N1CC[NH+](C)CC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.714219839309532,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.529754475986667,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.07500252538192696,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 4,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "O=C(CN1CCC[C@@H]1C[NH+]1CCCCC1)N[C@H](c1ccccc1)C1CC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7814901836273302,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.4678227226107488,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.13178497232912728,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 5,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "C[C@H](N[C@@H]1CCC[C@@H]1[C@@H]1CCCC[NH2+]1)c1cccc(O)c1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7965596716365538,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.5580749985952889,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.12803037059342048,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 3,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CC(C)[C@H](C#N)N1CCN(C(=O)CN2CCO[C@H](c3cccs3)C2)CC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7844403622481508,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.833003154963899,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.0477190453780535,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 3,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CC[C@@H]1C[C@H](C(F)(F)F)n2nc([C@H]3CCN(C(=O)c4cc(C(C)C)n[nH]4)C3)cc2N1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7760387836291824,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.3537744044560782,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.04835275764063626,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 0,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "COc1cc(C[NH2+]C[C@@H]2CN3CCCC[C@@H]3CO2)c(SC)cc1OC",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7441695845039618,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.559361320972328,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.04526365138993436,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 1,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "Oc1ccc(N[C@@H]2CCCC[C@@H]2[C@@H]2CCC[NH2+]2)cc1F",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7431501856019535,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.5063729781142514,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.09770542181236065,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 2,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "O=C(CN1CCOCC1)N1CCN([C@@H]2CCN(c3ccccc3)C2=O)CC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.759420823839004,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.9354286589574117,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.05305381306705656,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 0,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CC[C@@H](C)[C@@H](O)CNC(=O)N[C@@H]1C[C@@H]2CCCc3cccc1c32",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7806284292895385,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.1053575799360369,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.10793267387338933,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 0,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "COC1CC[NH+](CCNC(=O)c2cc(Cl)c3ccccc3c2O)CC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7561590311665652,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.8700308585214331,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.041880556946426804,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 2,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "O=C(C[NH+]1CCC(Cn2cnc3ccccc32)CC1)N1CCCc2ccccc21",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7441593836140596,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.21724021598155424,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.03780236961489534,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 5,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CCC1(CNC(=O)NC[C@@H]2CCC[NH+](C)[C@@H]2c2cccs2)CC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.732663289200523,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.8800366038913565,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.053780408823234496,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 2,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CC[C@@H](CCO)C[NH2+]C1CC(c2ccc(Cl)cc2)C1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.792331358872669,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.5681533091570184,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.046881074202128295,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 4,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "N#C[C@H]1CNCCN1C(=O)c1cccc(O)c1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7299061676775546,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.1956718688196146,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.05162521066156795,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 3,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "N#CCCCN1CC[NH+](C/C=C/c2ccccc2)CC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7878151572415942,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.331451132152585,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.06432141811832236,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 2,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "C[NH2+][C@@H]1CCC[C@@H]1Cc1ccccc1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7452105896424521,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.2305586741462622,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.031017500234567463,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 5,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "C[C@]12Cc3conc3C[C@@H]1CC[C@H]1[C@@H]2CC[C@@]2(C)[C@H]1CC[C@@]2(C)O",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7679558844908304,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.40061266152591624,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.05308281581546155,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 2,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "C=CCc1cc(C[NH+]2CCC(c3nc(C)no3)CC2)cc(OC)c1O",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7817767061027479,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.1895380040297008,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.061503266635317966,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 1,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CNC(=O)CN1CCC([NH2+][C@H](CC(C)C)c2ccccn2)CC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7862580424111655,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.677398667726811,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.0655846790228572,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 4,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "COc1ccc(CCNC2CC[NH+](C)CC2)cc1OC",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7964046136033565,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.3086059932028196,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.047727344921846805,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 3,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CC(=O)N1CCN(Cc2cc(NCCOc3ccc(F)cc3F)cc[nH+]2)CC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.733183355307908,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.21634226655118072,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.17728430371509857,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 4,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CN1C(=O)C[C@H](C(=O)N2CCN(CCS(C)(=O)=O)CC2)[C@@H]1c1cccc(F)c1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7066072789302805,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.3565325322044044,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.0392638652511905,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 4,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CC(=O)N1CCN(CC[NH2+]Cc2cn(C)nc2-c2cccs2)CC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.767925089808091,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.5528992131715909,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.033104515290127506,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 3,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "Cc1cc(Cc2cccc(F)c2)cc([C@@H]2CCC[NH+]2Cc2cnn(C)c2)n1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7546164544563423,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.0634807212207276,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.0323093525556494,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 2,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "O[C@H](CC1CC1)[C@H]1CN2CCC[C@@H]2CO1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7560060014581472,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.7763144707433054,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.04389393993830664,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 1,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "c1c[nH]c(C[NH+]2CCC(n3cc(-c4ccsc4)nn3)CC2)n1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7590133775715998,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.9167232549295012,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.03904998937595567,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 0,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CCOc1ccccc1[C@H]1[C@H]2[NH+]=c3ccccc3=C2CCN1Cc1cccnc1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7221302960171894,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.557691929790068,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.07094475921827556,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 4,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "COc1ccc(C[NH+]2CCC[C@@H](c3nnc4n3CCC4)C2)c2ccccc12",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.773891910195121,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.130913756919908,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.03310877698031357,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 3,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "COc1cccc(OCCN2CC[NH+](C[C@@H]3CC=CCC3)CC2)c1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7693794666147483,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.3403156420632958,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.04637188806658821,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 3,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "C[C@@H]1CN(Cc2cnc3cnccn23)[C@H](c2ccccc2)CO1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7459378226491338,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.1029535356587577,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.035237922511828196,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 5,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "O=C(NCc1cc[nH+]c(N2CCCCC2)c1)c1c(O)cccc1O",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.799015382750595,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.39973240365628915,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.03402708252113751,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 1,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "c1ccc(-n2ccc(CNCCc3cn4c([nH+]3)CCCC4)n2)cc1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7071020157276148,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.3839082208573812,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.1303922881976716,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 0,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "Nc1nc(NCCc2cc(F)cc3c2OCOC3)[nH+]c2ccccc12",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7606349107178885,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.4988876755485786,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.07596249422692379,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 1,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "COc1cccc2c1OC[C@H](CNC(=O)C1CC[NH+](Cc3ccco3)CC1)C2",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7901063013050804,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.569169611670958,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.04193220934490538,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 0,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CCc1cccc(C)c1N[C@@H]1CC[NH2+]C1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7649726337498917,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.6589810665665843,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.13660662355154227,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 3,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CCC[C@H](C[NH2+]C1CC1)c1ccccc1Cl",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7850156092820136,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.3085216645480145,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.041942611056506304,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 2,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CC(C)c1ccc2c(c1)[C@H]([NH3+])CCC2",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7041631714126949,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.27151324045244,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.08642473418693651,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 3,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CC[C@H](N[C@H]1CC[NH2+]C1)c1ccccc1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.755912718992194,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.9522066697518952,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.04025163269910664,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 0,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "COc1cccc([C@@H](C)[NH+]2CCN(Cc3cccc4cn[nH]c34)CC2)c1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7393860217589954,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.0275341726651845,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.07130994664842032,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 3,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "COc1cccc2cc(C[NH+]3CCC[C@@H](c4cn[nH]c4)C3)oc12",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7757915509005752,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.7722613554855384,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.030039487077825416,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 4,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "Cc1noc([C@@H]2CCCN(c3cc(C)[nH+]c4ccc(F)cc34)C2)n1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7252671765485292,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.24668512170403467,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.08091076503274859,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 0,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CCN(CC)c1ncc(C[NH+]2CCC(CN3C[C@@H](C)O[C@H](C)C3)CC2)s1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7819756498127515,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.9994591137680842,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.0545899069223062,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 4,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CC(C)c1ccc2[nH+]c3c(cc2c1)CCN3",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.77418824269112,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.4646251406170223,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.1428854349847306,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 0,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "c1cnc(Oc2ccc(CN3CCCC[C@@H]3c3[nH]cc[nH+]3)cc2)cn1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7770595999448604,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.07323873672426978,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.06810040446878439,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 1,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "COc1cc([C@@H]2[C@H]3CCCC[C@]3(O)CC[NH+]2Cc2ccc(Cl)cc2)ccc1O",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7331611448497568,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.6598382014714113,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.11466907946328905,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 0,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "O=C(NCc1cnn2cccnc12)[C@H](c1cccnc1)N1CCCC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7654752451385886,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.4211961125534597,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.03730039115049615,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 0,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "COc1ccc(CN2CC[NH+](Cc3cc(Br)ccc3O)CC2)cc1OC",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7487081827710081,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.22702209800203288,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.07169925037823904,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 1,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CCn1nc(C)c(C[NH+]2CCC3(CC2)C[C@H]3C(=O)N2CCN(Cc3cccs3)CC2)c1C",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.724309955558426,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.7480540596958454,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.056509268234564584,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 4,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CCC[C@H]([NH2+][C@@H](CO)c1ccc(Cl)c(F)c1)C1CC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7943426943507836,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.0343425109342592,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.033395814172032155,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 2,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CC[NH2+]C1CC(c2cccnc2)C1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7303940604669537,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.4971668133404792,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.04099454323363842,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 1,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "O=C1CC2(CCCC2)C(=O)N1CN1CCN(S(=O)(=O)c2cccc(F)c2)CC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7029830561571867,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.39722700595060756,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.03781731844294642,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 0,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "Cc1nc(CCC[NH+]2CCC[C@H](c3nnc4ccccn34)C2)cs1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7702093191750048,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.7981234358347826,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.03426588045079628,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 5,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CCCn1cc[nH+]c1C[C@H]1CC[C@H](Cl)[C@@H]1C",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7225326767189837,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.901300665808456,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.09919122517457184,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 3,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "Cc1nc2c(C#N)cnn2c(C)c1CCC(=O)N1CCC(c2[nH]cc[nH+]2)CC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7458663456873375,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.9545818763289469,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.037291587770170366,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 3,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CC1CC[NH+](CCCCNC(=O)c2cnn3cc(Br)cnc23)CC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7256460047292068,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.4135159898636498,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.06017746834991855,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 5,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "O=C(C1CCN(C2CC[NH+](CCCc3ccccc3)CC2)CC1)N1CCC(O)CC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7391073886211612,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.7971815371570724,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.04775936882911143,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 2,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CC1CCC2(CC1)CC(=O)N(CN1CCC(O)(C(F)(F)F)CC1)C2=O",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7659895803898953,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.501237335346546,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.03666487920731618,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 4,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "O=C(Cc1c[nH]c2ccc(F)cc12)N[C@@H]1CC[NH+](CC2CCCC2)C1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7612853656071834,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.4949454142182141,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.06596179400473277,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 5,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "COc1ccccc1CC[NH+]1CCC(CN(C)C(=O)c2csc(C)n2)CC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7899268685777484,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.5515323727391679,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.03384701570455044,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 4,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "C[C@H](O)C[C@H](C)CNC(=O)NC[C@@H]1CCCN(c2ncccn2)C1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7006071002532674,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.9930987008392453,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.04723452559493698,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 2,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "C[C@@H](C[C@@H]1CC[NH2+]C1)c1ccccc1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7477709753284719,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.5498291390136465,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.06365501199904838,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 1,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CC1(C)CC([C@@H]2CCCc3cccnc32)=C[C@H]([NH3+])C1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7721657122724681,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.0085415814555352,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.10520949266782632,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 0,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CCC[NH2+][C@@H]1CCC[C@@H]1CCSc1ccc2c(c1)CCC2",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7580765940190546,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.2037795942561711,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.033248103115072106,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 3,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CC[C@](C)([C@H](Cc1cc(C)cc(C)c1)NC)[NH+](C)C",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7992145098944781,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.5946372957675001,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.05047024390726764,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 2,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CC(C)N(Cc1[nH+]ccn1C)C[C@@H]1CC=CCC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7336006372098787,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.5012135003424476,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.10169606920429392,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 5,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "Oc1ccc(-c2ccccc2)cc1C[NH+]1CCN(Cc2ccon2)CC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7385128960926509,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.5722003100095783,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.05499550495215054,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 0,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "Cc1ccc2[nH]cc(C[NH+]3CC[C@]4(O)CCCC[C@@H]4C3)c2c1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7814877619889896,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.7378914327392814,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.046726461816707046,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 5,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CCC[NH2+][C@@H](Cc1ccc(F)c(F)c1)CC(C)C",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7722791936964933,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.33634541933765516,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.06264173302907446,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 2,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CCCCCc1ccc(N[C@H]2CC[NH2+]C2)cc1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7243675677584707,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.5364871485079725,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.07651768143429347,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 5,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CN(Cc1c[nH]nc1-c1ccc(F)cc1)C(=O)c1ccccc1[C@@H]1CC[NH2+]C1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7155145395448654,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.6861573196028993,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.03008534530425057,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 3,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "Oc1cc(CC[C@@H]2CCCC[NH2+]2)cc(-c2ncnc3sccc23)c1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7669611449215078,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.4616074909179404,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.042368991820606036,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 4,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "O=C([C@H]1C[C@@H]2C=C[C@H]1C2)N1CCCc2cc(F)cc(F)c21",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7250747994048645,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.6276098395608203,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.06498375708292738,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 3,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "COCC[NH+]1CCC(NCc2cccc(Br)c2OC)CC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7700033660960158,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.3428356247743296,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.03903965829424559,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 5,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CCc1nc2c(s1)[C@@H](N(C)C(C)=O)CCC2",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7930656330191558,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.20369090097130987,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.04484311885583062,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 4,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CCc1noc(CC)c1CNC(=O)c1ccc(N2CC[NH+](CC)CC2)cc1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7734492720206714,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.02880315948711,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.031521192349352,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 2,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "c1ccc2c3c([nH]c2c1)CC[C@H](N[C@@H]1CC[NH+](C2CCCC2)C1)C3",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7946500205325372,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.733762256532753,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.10820955540211238,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 4,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "C[NH+]1CCN(CCNC(=O)c2ccccc2SCc2ccccc2)CC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7262193950123595,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.3008236509520538,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.03178833352256186,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 1,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CC[NH+](CC)C1([C@@H](Cc2ccccc2C)NC)CCCC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.787647204395726,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.081900183607783,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.05162011605414693,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 5,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "O=C(CCCNC(=O)c1ccccc1)NC[C@H]1CN2CCCC[C@@H]2CO1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7251875874980984,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.27638047155281187,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.03489674833649814,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 1,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "COc1cccc([C@@H](CNC(=O)c2cc(F)c(F)cc2Cl)[NH+]2CCCC2)c1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7385440605739667,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.4200112173282389,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.1551264327913185,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 3,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CC[NH2+][C@H](CCc1ccsc1)c1ncc[nH]1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7880227850027408,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.7225154451754192,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.05228624894111105,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 5,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CCC(CC)(CC)[NH2+]Cc1cncn1C1CC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7739274668562075,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.053044891792456,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.030569556215221984,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 2,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "COCCCN1CC2(CCC1=O)CC[NH+](C[C@@H](C)c1ccccc1)CC2",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7568595741149639,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.6151245086332406,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.03155235589600171,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 0,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "O=C([C@@H]1CC=CCC1)N1CCN(CCn2cc[nH+]c2-c2ccccc2)CC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7641751504467926,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.49874574945796646,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.13767457708015196,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 4,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CC(C)[C@H](CNC(=O)c1ccc(OC(F)F)cc1)N1CC[NH+](C)CC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7622757985523392,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.694081478174931,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.09351353222461847,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 1,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "C/C(=C/CC[NH2+]C1CC1)c1ccc(C)cc1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7283768996948713,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.19981069629242898,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.04326006610859962,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 4,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "Cc1cc2c(cc1C)[C@@H](O)CC1(CC[NH+](C[C@@H](O)c3ccc(Cl)cc3)CC1)O2",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7394935163129542,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.488487404921519,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.07718061905548251,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 3,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CC(C)[C@@H](CNC(=O)c1cnn(-c2ccccc2)c1)N1CC[NH+](C)CC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7905869309950992,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.992701345910083,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.05407338801609618,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 0,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CCc1noc(C)c1C(=O)N1CC[C@@]2(CCC[NH+](Cc3cccc(OC)c3OC)C2)C1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7645527977645282,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.8618569972270338,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.03213022580940746,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 1,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "[NH3+][C@@H]1CC[C@@H](N2Cc3ccccc3C2)C1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7294235455111874,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.528352471869923,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.13695512085829314,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 0,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "Cc1cn2c([nH+]1)[C@H](CNCc1c(C)nc3sc(C)cn13)CCC2",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.799228112135318,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.2141593134823794,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.07700913368232323,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 4,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "COc1ccc2c(c1)OC1(CC[NH+](C[C@@H](O)c3ccc4c(c3)CCCC4)CC1)C[C@@H]2O",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7059764213216556,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.7066430841496723,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.0934990374331349,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 3,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "Cn1cc[nH+]c1N1CCN(Cc2nnc(-c3ccccc3)n2C)CC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7109120328887439,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.9732837039717734,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.042399481235621726,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 5,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "C=C(C)C[NH2+]C[C@@]1(O)CCCN(Cc2ccc(F)c(F)c2)C1=O",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7655800956876179,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.775360117072937,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.030020744779342357,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 4,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CC[NH+](CC)C1([C@H](NC)c2cc(Cl)cnc2N)CCCC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7509108580276859,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.9290361206708497,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.05176307752696901,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 1,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "Oc1c(Cl)cc(Cl)cc1C[NH+]1CC[C@]2(O)CCCC[C@@H]2C1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7792866353967388,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.80203977668158,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.03946643494344855,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 1,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "Cc1ccccc1[C@@H]([NH2+]Cc1ccc(F)c(C[NH+](C)C)c1)C1CC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7757047772457408,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.6458830684648529,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.11711249278557855,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 0,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CCN[C@@H](c1cncc(F)c1)C(CC)(CC)[NH+](C)C",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7859833449392498,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.896641262188124,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.045210792413199925,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 3,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CC(=O)N1CCC[C@@H]1c1nc(C[NH+](C)Cc2ccccc2N2CCCC2)cc(N(C)C)n1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7185260516071902,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.3955999835536177,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.0386555885305351,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 3,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "Cn1cc(C(=O)NCC2CC[NH+](Cc3cc(Cl)cc(Cl)c3O)CC2)cn1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7176297292463812,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.0300623915000153,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.05355168811226123,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 1,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CN(C[C@H]1CCCC[NH+]1C)C(=O)CCc1nnc(C2(c3ccc(Cl)cc3)CCC2)o1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7315737359682478,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.1690526870212212,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.042703540280922624,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 3,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "NC(=O)C1(C(=O)N2CC[C@@H](N3CCN(c4ccccc4F)CC3)[C@H](O)C2)CC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.715943093506873,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.6972983140213271,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.0855531496701227,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 1,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "Cc1ccccc1C[C@@]1(CO)CCC[NH+](C2CCN(CCc3ccccc3)CC2)C1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7387018404067361,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.5553817136773438,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.17670485479404946,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 0,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "C[C@@H](N[C@@H]1CC[C@H]([NH+](C)C)C1)c1ccc(OC[C@H]2CCCCO2)c(F)c1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7792192490917564,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.2383402201812983,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.048809567679746806,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 1,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "COc1ccc(C[NH2+]CCN2CCC(OC)CC2)cc1O",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7224069844930401,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.2541556088169068,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.17752976290071615,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 0,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CCc1c(C[NH2+]C)cnn1CCC(C)C",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7516216381434848,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.4085914156118122,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.05562141770881528,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 2,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "c1ccc([C@@H](Cn2ccnc2-c2ccncc2)[NH+]2CCCCC2)cc1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7791316686997677,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.5359009693784706,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.055824738599185464,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 1,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CCCC[NH2+][C@@H](c1cccc(S(C)(=O)=O)c1)c1ccc(F)c(F)c1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7775669469278269,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.10339940134724035,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.04990510098652474,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 0,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "COc1ccc2c(c1)OC[C@H](C(=O)NCCNc1cc[nH+]cc1C)C2",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7822326380100226,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.1115058815965422,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.06041626023192505,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 2,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "C[NH+]1CCN(CCOc2ccc(N[C@H]3CCC[C@H](C4CC4)C3)cc2)CC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7834958802538419,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.9265401711708487,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.16415769048659118,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 3,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "O[C@H]1CCCC[C@H]1CCC[NH2+][C@H](c1ccccc1)C1CC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7435143345890498,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.6434935075558619,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.03428641432731146,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 5,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CC1=NC(=O)[C@@H](CCC(=O)N2CCN(CC(=O)Nc3ccc(F)cc3)CC2)C(C)=N1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7655467439513605,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.3630762832907716,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.05535760177999261,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 4,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CCOc1cc(/C=[NH+]/CCN2Cc3ccccc3C2=O)ccc1O",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7773649220887928,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.9114530671100658,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.03788341280998413,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 0,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "Cc1ccc(N2C(=O)C(Cl)=C(N3CCCCCC3)C2=O)cc1Cl",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7586745943136595,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.396528090136413,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.053149933769040876,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 5,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CCc1[nH]c2c(CNC(=O)C[NH+]3CCCC3)cc(C)cc2c1C",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7719891269191412,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.2660696536804266,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.041180103117433565,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 2,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CCc1noc(CC)c1CC(=O)N(C)CCC#N",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7692136696086105,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.15277775119620635,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.04223339984029157,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 5,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "COc1cc([C@H]2[C@@H]3CCCC[C@]3(O)CC[NH+]2Cc2ccccc2F)ccc1O",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7572767590075714,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.0470447874938886,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.059470857133946946,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 4,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "C=CCOc1c(Br)cc(CN(C)[C@H]2CC[NH+](C)[C@H](C)C2)cc1OC",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7153894209706587,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.399137440994148,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.0673033157330595,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 4,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "Cc1ccc([C@@H]2C[NH2+]CC[C@H]2[C@H]2CC=CCC2)cc1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7834113295778865,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.9820473904486424,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.06473677860174112,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 3,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "C=CCNC(=O)c1ccc(N2CC[C@H](CN3CCOCC3)C2)nc1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7933312291914314,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.43833274776172226,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.03821007211068649,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 0,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "COc1cccc(/C(C)=C/C(=O)N2CCN(C[C@H]3CCCC[NH+]3C)CC2)c1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7922195152027742,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.7149025759307044,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.13270223145214632,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 0,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "O=c1[nH]c2ccccc2cc1C[NH+]1CCC(OCc2ccc(F)cc2)CC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7276496622846549,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.009363000594569515,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.035303673975147706,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 4,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "N#CCCN(C[C@H]1CCOC1)Cn1ccc(-c2ccsc2)n1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7879978560041614,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.06581780521016439,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.05288477782829953,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 1,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "O=C(NCCCn1cc[nH+]c1)c1cc(C2CC2)[nH]n1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7508621245903202,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.6835721840141986,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.06255877484631418,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 5,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "O=C(NC[C@H]1C[C@@]12CCc1ccccc12)N[C@@H](CO)c1ccc(Cl)cc1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7529659901624661,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.014026490388137747,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.03498172722726168,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 1,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "Cc1cc(-n2c(C)cc(C(=O)CN3CCC[C@@H](c4[nH]cc[nH+]4)C3)c2C)no1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7020454524702425,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.7942137941032701,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.09622146327954596,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 3,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CC(C)C[NH+]1CCN(CCCN2C(=O)c3ccccc3C2=O)CC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7741334657582126,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.4360586715938908,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.05079770441158919,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 5,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "O=C(NCCNc1cccc[nH+]1)c1ccc(Br)c(O)c1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7286737625405607,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.562320046085762,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.03953829274802566,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 4,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "C[NH+](CCN1CCN(c2ccccc2)CC1)Cc1ccc([S@@](C)=O)cc1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7931596451971963,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.4817164018251279,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.19245878415208698,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 4,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "C#CCN1CCN(C(=O)CNc2cccc(C)c2C(=O)NC)CC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.774772924148574,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.4126579080429511,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.11372215051627327,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 3,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "COc1ccccc1N1CC[NH+](CCCC(=O)c2ccc(F)cc2)CC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7717125652607607,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.0031295773222539125,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.07021272273745624,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 4,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "O=C(CN(Cc1csc2[n+]1CCCN2)C[C@@H]1CCCO1)N1CCCC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7756022697316108,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.3274719796779515,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.04794848462206907,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 0,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CCC(CC)[C@@H](CNC(=O)c1[nH]nc(C)c1Br)N1CCOCC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7537352087704783,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.20721941180018777,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.038917990331198395,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 2,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "Cc1ccc(-c2n[nH]cc2C[NH2+][C@H]2CCCN(c3ccc(C#N)cc3F)C2)o1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.71268751133551,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.8593793476503868,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.06387915979313846,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 2,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CC[C@H](CCO)C[NH2+][C@H]1CCc2ccccc2C1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.786611640622348,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.7188486895188662,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.18897234385008133,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 1,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CCOc1ccc(-c2[nH+]ccn2CCc2cnccn2)cc1CO",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7197492656810773,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.5918275539031154,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.0389217923018787,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 1,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "O=S1(=O)C[C@@H](O)[C@H](NCCc2c[nH]c3ccccc23)C1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7648482687571134,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.3277317135831375,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.0741468757453635,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 1,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "C[NH+](C)[C@@H]1CC[C@@H](NC(=O)CCCc2c[nH]c3ccccc23)C1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.746295525707395,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.2046958027320946,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.06405055797370438,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 2,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CC[NH+](CC)c1ccc([C@H]2NC(=O)c3c(sc4c3CCCC4)N2)cc1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7884541363576911,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.6660183108660274,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.03327134660627206,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 0,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CC1CCC(NC(=O)CN(C)C[C@H]2CC[NH+](Cc3ccccc3)C2)CC1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7786880870359169,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.4340688255492897,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.041942076247947435,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 2,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CCC(CC)[NH+](CC(C)C)C[C@H]1Cc2ccccc2CN1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7879966818846477,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -1.4738336739668867,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.04857021924923541,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 4,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "Cn1cc(C2CC[NH+](Cc3cccc(-c4cccnc4)c3)CC2)cn1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7958726932713259,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.2936503633749459,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.043848194060428315,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 2,
+    "split": "test",
+    "instr_setting": "seen"
+  },
+  {
+    "task": "drd2+logp+qed",
+    "source_smiles": "CCC1(CC)CC[NH+](CC[C@H](NC)c2cccc(Cl)c2)C1",
+    "target_smiles": null,
+    "properties": {
+      "qed": {
+        "change": null,
+        "source": 0.7910913494922699,
+        "target": null
+      },
+      "logp": {
+        "change": null,
+        "source": -0.9703545108040919,
+        "target": null
+      },
+      "jnk3": null,
+      "gsk3b": null,
+      "drd2": {
+        "change": null,
+        "source": 0.13944969857011355,
+        "target": null
+      },
+      "sa": null
+    },
+    "instr_idx": 0,
+    "split": "test",
+    "instr_setting": "seen"
+  }
+]

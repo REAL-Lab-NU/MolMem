@@ -7,16 +7,22 @@ This module manages multiple (kinds of) environments and handles:
 - Evolving Skill Memory for experience-based learning
 """
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any, Union
+from typing import Any, Dict, List, Optional, Union
 import PIL.Image
-import hydra
+import logging
 import random
 import numpy as np
 
 from ragen.env import REGISTERED_ENVS, REGISTERED_ENV_CONFIGS
 from ragen.utils import register_resolvers
-from ragen.llm_agent.evolving_skill_memory import EvolvingSkillMemory
+from ragen.llm_agent.evolving_skill_memory import (
+    EvolvingSkillMemory,
+    classify_multi_objective_transition,
+    extract_experience_from_trajectory,
+)
 register_resolvers()
+
+logger = logging.getLogger(__name__)
 
 @dataclass
 class EnvStatus:
@@ -34,7 +40,12 @@ class EnvStateManager:
     The class is responsible for managing multiple (kinds of) environments
     
     """
-    def __init__(self, config, mode: str = "train"):
+    def __init__(
+        self,
+        config,
+        mode: str = "train",
+        reload_validation_skill_memory: bool = True,
+    ):
         self.sys_config = config
         self.mode = mode
         self.config = getattr(self.sys_config.es_manager, mode)
@@ -46,14 +57,44 @@ class EnvStateManager:
         self.oracle_call_budget_tracker = {}       # Initialize tracker for cumulative real oracle calls per molecule (no cache)
         self.total_oracle_call_budget_tracker = {} # Initialize tracker for cumulative total oracle calls per molecule (including cache)
         
-        # Initialize Evolving Skill Memory for experience-based learning
-        self.skill_memory = None
-        if self.sys_config.get('evolving_skill_memory', {}).get('enabled', False):
-            skill_config = self.sys_config.evolving_skill_memory
+        skill_config = self.sys_config.evolving_skill_memory
+        extraction_config = skill_config.get('extraction', {})
+        self._skill_memory_init_kwargs = {
+            'max_size': skill_config.get('max_size', 1000),
+            'min_score_delta': extraction_config.get(
+                'min_score_delta', skill_config.get('min_score_delta', 0.1)
+            ),
+        }
+        configured_save_path = skill_config.get(
+            'save_path', f'skill_memory_{mode}.json'
+        )
+        self._skill_memory_path = configured_save_path
+        if mode == 'val':
+            # Keep the requested path independently from the currently attached
+            # memory. A missing snapshot may appear after the training manager
+            # saves it, so every reset must be able to retry the same path.
+            self._skill_memory_load_path = configured_save_path
+            self._last_skill_memory_warning_key = None
+            self._validation_skill_memory_reload_enabled = bool(
+                reload_validation_skill_memory
+            )
+            self.skill_memory = self._new_empty_validation_skill_memory()
+        else:
             self.skill_memory = EvolvingSkillMemory(
-                max_size=skill_config.get('max_size', 10000),
-                save_path=skill_config.get('save_path', f'skill_memory_{mode}.pkl'),
-                min_score_delta=skill_config.get('min_score_delta', 0.01)
+                save_path=None,
+                read_only=False,
+                **self._skill_memory_init_kwargs,
+            )
+            self.skill_memory.save_path = configured_save_path
+        self.current_epoch = 0
+        # Raw transformations live only until this training step is summarized.
+        self._skill_candidates = []
+        self._set_skill_memory_on_envs()
+
+        if mode == 'val' and self._validation_skill_memory_reload_enabled:
+            logger.info(
+                "Evolving Skill Memory: validation snapshot will be loaded "
+                "atomically on reset"
             )
 
     def _init_envs(self):
@@ -70,31 +111,52 @@ class EnvStateManager:
         assert len(self.config.env_configs.tags) == len(self.config.env_configs.n_groups), f"Number of tags must equal number of n_groups. Got {len(self.config.env_configs.tags)} != {len(self.config.env_configs.n_groups)}"
         self.envs = self._init_env_instances(self.config)
 
-        # Add molecule data loading
         self.molecule_data_map = {}  # Use dictionary to map seed to molecules
         
         if any("MoleculeOptimization" in tag for tag in self.config.env_configs.tags):
-            # Load training/validation dataset
             data_path = self.sys_config.data.train_file if self.mode == "train" else self.sys_config.data.val_file
             try:
                 import pandas as pd
                 df = pd.read_parquet(data_path)
-                
-                # Build seed to molecule mapping
-                for idx, row in df.iterrows():
-                    if "seed" in row and "smiles" in row:
-                        # Original format: directly use seed field
-                        self.molecule_data_map[row["seed"]] = row["smiles"]
-                    elif "extra_info" in row and "seed" in row["extra_info"] and "smiles" in row:
-                        # Extracted format: use seed from extra_info
-                        self.molecule_data_map[row["extra_info"]["seed"]] = row["smiles"]
-                    elif "smiles" in row:
-                        # Zinc format: use row index as seed
-                        self.molecule_data_map[idx] = row["smiles"]
-                
-                print(f"Loaded {len(self.molecule_data_map)} molecules with seed mapping from {data_path}")
-            except Exception as e:
-                print(f"Error loading molecule data: {e}")
+            except Exception as exc:
+                raise RuntimeError(
+                    f"Failed to load molecule dataset from {data_path}"
+                ) from exc
+
+            smiles_column = str(self.sys_config.data.get('smiles_column', 'smiles'))
+            if smiles_column not in df.columns:
+                raise ValueError(
+                    f"Molecule dataset {data_path} has no {smiles_column!r} column"
+                )
+            if df.empty:
+                raise ValueError(f"Molecule dataset is empty: {data_path}")
+
+            columns = set(df.columns)
+            for idx, row in df.iterrows():
+                smiles = row[smiles_column]
+                if not isinstance(smiles, str) or not smiles.strip():
+                    raise ValueError(
+                        f"Invalid SMILES value in {data_path} at row {idx}: {smiles!r}"
+                    )
+
+                mapped_seed = idx
+                if 'seed' in columns and pd.notna(row['seed']):
+                    mapped_seed = row['seed']
+                elif 'extra_info' in columns:
+                    extra_info = row['extra_info']
+                    if isinstance(extra_info, dict) and 'seed' in extra_info:
+                        mapped_seed = extra_info['seed']
+
+                if mapped_seed in self.molecule_data_map:
+                    raise ValueError(
+                        f"Duplicate molecule seed {mapped_seed!r} in {data_path}"
+                    )
+                self.molecule_data_map[mapped_seed] = smiles.strip()
+
+            print(
+                f"Loaded {len(self.molecule_data_map)} molecules with seed mapping "
+                f"from {data_path}"
+            )
 
     def _init_env_instances(self, config):
         env_list = []
@@ -109,14 +171,30 @@ class EnvStateManager:
                 else:
                     env_config = REGISTERED_ENV_CONFIGS[env_class](**cfg_template.env_config)
                 
-                # Special handling for molecule optimization environment, pass complete configuration
                 if env_class == "molecule_opt":
-                    # Pass additional configuration parameters for molecule optimization environment
                     extra_env_config = {}
                     if hasattr(cfg_template, 'molecule_opt_task'):
                         extra_env_config['molecule_opt_task'] = cfg_template.molecule_opt_task
                     if hasattr(cfg_template, 'molecule_opt_similarity_threshold'):
                         extra_env_config['molecule_opt_similarity_threshold'] = cfg_template.molecule_opt_similarity_threshold
+                        similarity_threshold = float(cfg_template.molecule_opt_similarity_threshold)
+                        if env_config.final_similarity_threshold is None:
+                            env_config.final_similarity_threshold = similarity_threshold
+
+                    static_config = self.sys_config.static_exemplar_memory
+                    from ragen.env.molecule_opt.config import RetrieverConfig
+
+                    env_config.retriever = RetrieverConfig(
+                        url=static_config.get('url', 'http://127.0.0.1:8000/retrieve'),
+                        topk=static_config.get('topk', 5),
+                        hint_topk=static_config.get('hint_topk', 3),
+                        timeout=static_config.get('timeout', 5.0),
+                        trigger_mode=static_config.get('trigger_mode', 'on_stuck'),
+                        no_improvement_threshold=static_config.get('no_improvement_threshold', 2),
+                        rollback_threshold=static_config.get('rollback_threshold', 1),
+                        max_triggers=static_config.get('max_triggers', 2),
+                        min_improvement_margin=static_config.get('min_improvement_margin', 0.0),
+                    )
                     env_obj = REGISTERED_ENVS[env_class](env_config, extra_env_config)
                 else:
                     env_obj = REGISTERED_ENVS[env_class](env_config)
@@ -126,11 +204,191 @@ class EnvStateManager:
             done_groups += n_group
         return env_list
 
-    def reset(self, seed: Optional[int] = None, global_step: int = 0, total_training_steps: int = 1):
+    def _set_skill_memory_on_envs(self):
+        """Inject the shared Evolving Skill Memory into every molecule env."""
+        config = self.sys_config.evolving_skill_memory
+        hints_config = config.get('hints', {})
+        # Validation/evaluation does not advance the training global step, so it
+        # must not inherit the training-only hint warm-up.
+        min_step_for_hints = (
+            0 if self.mode == 'val'
+            else int(config.get('min_step_for_hints', 5))
+        )
+        if min_step_for_hints < 0:
+            raise ValueError("min_step_for_hints must be non-negative")
+        trigger_mode = hints_config.get(
+            'trigger_mode_val' if self.mode == 'val' else 'trigger_mode',
+            'always' if self.mode == 'val' else 'on_stuck',
+        )
+        retrieval_config = dict(config.get('retrieval', {}))
+
+        for entry in self.envs:
+            env = entry['env']
+            if hasattr(env, 'set_skill_memory'):
+                env.set_skill_memory(
+                    self.skill_memory,
+                    min_step=min_step_for_hints,
+                    trigger_mode=trigger_mode,
+                    no_improvement_threshold=hints_config.get('no_improvement_threshold', 2),
+                    rollback_threshold=hints_config.get('rollback_threshold', 1),
+                    retrieval_config=retrieval_config,
+                )
+
+    def _new_empty_validation_skill_memory(self) -> EvolvingSkillMemory:
+        """Return an unattached-path, read-only memory for safe validation fallback."""
+        return EvolvingSkillMemory(
+            save_path=None,
+            read_only=True,
+            **self._skill_memory_init_kwargs,
+        )
+
+    def load_training_skill_memory(self) -> bool:
+        """Load the training skill bank only when the trainer resumes a checkpoint."""
+        if self.mode != 'train':
+            raise RuntimeError("Training skill memory can only be loaded in train mode")
+
+        load_path = self._skill_memory_path
+        try:
+            candidate = EvolvingSkillMemory(
+                save_path=None,
+                read_only=False,
+                **self._skill_memory_init_kwargs,
+            )
+            candidate.load(str(load_path))
+            candidate.save_path = load_path
+            required_tasks = self._skill_memory_tasks()
+            missing_tasks = [
+                task for task in required_tasks if not candidate.has_task(task)
+            ]
+            if missing_tasks:
+                task_list = ', '.join(repr(task) for task in missing_tasks)
+                raise ValueError(
+                    f"snapshot contains no evidence-validated summaries for "
+                    f"task(s) {task_list}"
+                )
+        except Exception as exc:
+            _, pkl_path = EvolvingSkillMemory._storage_paths(str(load_path))
+            logger.warning(
+                "Could not restore Evolving Skill Memory from %s: %s: %s. "
+                "Checkpoint training will continue with an empty skill bank.",
+                pkl_path,
+                type(exc).__name__,
+                exc,
+            )
+            return False
+
+        self.skill_memory = candidate
+        self._set_skill_memory_on_envs()
+        logger.info("Evolving Skill Memory restored with the training checkpoint")
+        return True
+
+    def enable_validation_skill_memory_reload(self) -> None:
+        """Allow validation to consume a snapshot produced by this run."""
+        if self.mode != 'val':
+            raise RuntimeError("Only validation managers reload read-only memory")
+        self._validation_skill_memory_reload_enabled = True
+
+    def _skill_memory_tasks(self) -> List[str]:
+        """Return molecule tasks that need retrievable validated summaries."""
+        return sorted({
+            str(entry['env'].molecule_opt_task)
+            for entry in self.envs
+            if hasattr(entry['env'], 'molecule_opt_task')
+        })
+
+    def _use_empty_validation_skill_memory(
+        self,
+        warning_key,
+        reason: str,
+    ) -> bool:
+        """Replace the validation memory with an empty instance and warn once."""
+        empty_memory = self._new_empty_validation_skill_memory()
+        self.skill_memory = empty_memory
+        self._set_skill_memory_on_envs()
+
+        if warning_key != self._last_skill_memory_warning_key:
+            logger.warning(
+                "Evolving Skill Memory will not be used for this validation run: "
+                "%s. Continuing without evolving-memory hints; Static Exemplar "
+                "Memory remains available according to its configuration.",
+                reason,
+            )
+        self._last_skill_memory_warning_key = warning_key
+        return False
+
+    def _reload_validation_skill_memory(self) -> bool:
+        """Atomically replace validation memory with a checked snapshot or an empty instance."""
+        load_path = self._skill_memory_load_path
+        if not load_path:
+            return self._use_empty_validation_skill_memory(
+                ('missing_path',),
+                'skill_memory_path is empty',
+            )
+
+        _, pkl_path = EvolvingSkillMemory._storage_paths(str(load_path))
+        try:
+            # Loading into a fresh candidate prevents a failed or partially
+            # completed load from contaminating the attached memory.
+            candidate = self._new_empty_validation_skill_memory()
+            candidate.load(str(load_path))
+            candidate.save_path = load_path
+        except FileNotFoundError:
+            return self._use_empty_validation_skill_memory(
+                ('missing_pkl', pkl_path),
+                f'PKL snapshot does not exist at {pkl_path}',
+            )
+        except Exception as exc:
+            return self._use_empty_validation_skill_memory(
+                ('load_error', pkl_path, type(exc).__name__, str(exc)),
+                f'failed to load PKL snapshot {pkl_path}: '
+                f'{type(exc).__name__}: {exc}',
+            )
+
+        try:
+            required_tasks = self._skill_memory_tasks()
+            missing_tasks = [
+                task for task in required_tasks if not candidate.has_task(task)
+            ]
+        except Exception as exc:
+            return self._use_empty_validation_skill_memory(
+                ('validation_error', pkl_path, type(exc).__name__, str(exc)),
+                f'failed to validate loaded PKL snapshot {pkl_path}: '
+                f'{type(exc).__name__}: {exc}',
+            )
+        if missing_tasks:
+            task_list = ', '.join(repr(task) for task in missing_tasks)
+            return self._use_empty_validation_skill_memory(
+                ('missing_validated_tasks', pkl_path, tuple(missing_tasks)),
+                f'PKL snapshot {pkl_path} contains no evidence-validated '
+                f'summaries for task(s) {task_list}',
+            )
+
+        # Publish only after loading and all task checks have completed.
+        self.skill_memory = candidate
+        self._set_skill_memory_on_envs()
+        self._last_skill_memory_warning_key = None
+        logger.info("Evolving Skill Memory snapshot loaded from %s", pkl_path)
+        return True
+
+    def reset(
+        self,
+        seed: Optional[int] = None,
+        global_step: int = 0,
+        total_training_steps: int = 1,
+        evaluation_inputs: Optional[Dict[int, Dict[str, Any]]] = None,
+        reload_skill_memory: bool = True,
+    ):
         """
         Reset the environments and get initial observation
         build up rollout cache like [{"env_id": int, "history": List[Dict], "group_id": int}, ...]
         """
+        if (
+            self.mode == 'val'
+            and reload_skill_memory
+            and self._validation_skill_memory_reload_enabled
+        ):
+            self._reload_validation_skill_memory()
+
         def _expand_seed(seed: int):
             seeds = [[seed + i] * self.group_size for i in range(self.env_groups)] # [[seed, ..., seed], [seed+1, ..., seed+1], ...]
             return sum(seeds, [])
@@ -138,32 +396,48 @@ class EnvStateManager:
         envs = self.envs
         rollout_cache = [{"env_id": entry['env_id'], "history": [], "group_id": entry['group_id'], "tag": entry['tag'], "penalty": 0} for entry in envs]
 
-        # reset all environments
         if self.mode == "train":
             seed = random.randint(0, 1000000) if seed is None else seed # get a random seed
         else:
-            seed = 123
+            seed = 123 if seed is None else seed
         expanded_seeds = _expand_seed(seed)
 
         for env_id, (current_seed, env_entry) in enumerate(zip(expanded_seeds, envs)):
             options = { # Prepare options dictionary
                 "global_step": global_step,
-                "total_training_steps": total_training_steps
+                "total_training_steps": total_training_steps,
             }
 
-            # Add corresponding initial molecules for molecule optimization environment
-            if hasattr(self, 'molecule_data_map') and len(self.molecule_data_map) > 0:
+            if evaluation_inputs is not None:
+                group_id = env_entry['group_id']
+                if group_id not in evaluation_inputs:
+                    raise ValueError(f"Missing evaluation input for group {group_id}")
+                evaluation_input = evaluation_inputs[group_id]
+                options.update({
+                    "initial_smiles": evaluation_input["lead_smiles"],
+                    "starting_smiles": evaluation_input["start_smiles"],
+                    "initial_properties": evaluation_input["lead_properties"],
+                    "starting_properties": evaluation_input["start_properties"],
+                })
+                env_entry['_evaluation_budget_state'] = evaluation_input['budget_state']
+                env_entry['_evaluation_generation'] = evaluation_input['generation']
+            else:
+                env_entry.pop('_evaluation_budget_state', None)
+                env_entry.pop('_evaluation_generation', None)
+            if (
+                evaluation_inputs is None
+                and hasattr(self, 'molecule_data_map')
+                and len(self.molecule_data_map) > 0
+            ):
                 if current_seed in self.molecule_data_map:
                     options["initial_smiles"] = self.molecule_data_map[current_seed]
                 else:
-                    # Use modulo operation to map random seed to available molecule index
                     all_seeds = list(self.molecule_data_map.keys())
                     seed_idx = current_seed % len(all_seeds)
                     mapped_seed = all_seeds[seed_idx]
                     options["initial_smiles"] = self.molecule_data_map[mapped_seed]
 
             try:
-                # Call environment reset, pass seed and options containing global step information
                 env_entry['env'].reset(seed=current_seed, options=options)
                 env_entry['status'] = EnvStatus(seed=current_seed)
 
@@ -172,16 +446,24 @@ class EnvStateManager:
                         self.env_smiles_map = {}
                     self.env_smiles_map[env_id] = options["initial_smiles"]
 
-            except Exception as e:
-                print(f"Error resetting environment {env_id} with seed {current_seed} and options {options}: {e}")
+            except Exception as exc:
+                raise RuntimeError(
+                    f"Error resetting environment {env_id} with seed {current_seed}"
+                ) from exc
 
-        # update rollout cache
+        active_rollouts = []
         for cache, env in zip(rollout_cache, envs):
             next_state = self._handle_mm_state(env['env'].render())
             cache['history'] = self._update_cache_history(cache['history'], next_state=next_state, actions_left=env['max_actions_per_traj'], num_actions_info=None)
+            budget_state = env.get('_evaluation_budget_state')
+            if budget_state is not None and budget_state['oracle_calls'] >= budget_state['limit']:
+                env['status'].terminated = True
+                env['status'].truncated = True
+            else:
+                active_rollouts.append(cache)
             
         self.rollout_cache = rollout_cache
-        return rollout_cache
+        return active_rollouts
 
     def step(self, all_env_inputs: List[Dict]):
         """Step the environments.
@@ -194,17 +476,58 @@ class EnvStateManager:
         env_outputs: List[Dict]
             {env_id: int, history: List[Dict][{state: str, actions: List[str], reward: float, info: Dict, llm_response: str, llm_raw_response: str, (Optional)images: List[PIL.Image.Image]}]}
         """
-        def _execute_actions(env, actions):
+        def _execute_actions(entry, actions):
+            env = entry['env']
+            budget_state = entry.get('_evaluation_budget_state')
             acc_reward, turn_info, turn_done = 0, {}, False
             executed_actions = []
+            skill_transitions = []
             for action in actions:
+                if budget_state is not None and budget_state['oracle_calls'] >= budget_state['limit']:
+                    turn_info['oracle_budget_exhausted'] = True
+                    turn_done = True
+                    break
+
                 _, reward, done, info = env.step(action)
                 acc_reward += reward
-                turn_info.update(info) # NOTE: currently use last info for multi-action
+
+                total_evaluations = int(info.get('total_oracle_calls_this_step', 0))
+                if budget_state is not None and total_evaluations:
+                    real_oracle_calls = int(info.get('oracle_calls_this_step', 0))
+                    budget_state['oracle_calls'] += real_oracle_calls
+                    budget_state['candidate_evaluations'] += total_evaluations
+
+                    multi_info = info.get('multi_objective_info', {})
+                    properties = multi_info.get('new_properties') or {
+                        env.target_property: info.get('score_after', 0.0)
+                    }
+                    event = {
+                        'oracle_call': budget_state['oracle_calls'],
+                        'candidate_evaluation': budget_state['candidate_evaluations'],
+                        'cached': real_oracle_calls == 0,
+                        'generation': entry.get('_evaluation_generation', 0),
+                        'env_id': entry['env_id'],
+                        'smiles': info.get('final_smiles', action),
+                        'properties': dict(properties),
+                        'similarity': float(info.get('similarity', 0.0)),
+                    }
+                    budget_state['events'].append(event)
+                    info['evaluation_oracle_call'] = budget_state['oracle_calls']
+
+                # Preserve action-level transitions so scores stay paired with molecules.
+                turn_info.update(info)
+                skill_transitions.append(dict(info))
                 executed_actions.append(action)
+                if budget_state is not None and budget_state['oracle_calls'] >= budget_state['limit']:
+                    turn_info['oracle_budget_exhausted'] = True
+                    turn_done = True
+                    break
                 if done:
                     turn_done = True
                     break
+
+            if skill_transitions:
+                turn_info['_skill_transitions'] = skill_transitions
             
             return acc_reward, turn_info, turn_done, executed_actions
 
@@ -220,8 +543,6 @@ class EnvStateManager:
                 'actions': executed_actions, 'reward': acc_reward, 'info': turn_info,
                 'llm_response': env_input['llm_response'], 'llm_raw_response': env_input['llm_raw_response']
             })
-            # filter out invalid actions
-            # history = [content for content in history[:-1] if content['actions']] + [history[-1]]
             return status, history
 
         envs = self.envs
@@ -230,12 +551,11 @@ class EnvStateManager:
         for env_input in all_env_inputs:
             acc_reward, turn_info, turn_done = 0, {}, False
             entry = envs[env_input['env_id']]
-            env_id, env = entry['env_id'], entry['env']
+            env_id = entry['env_id']
             actions_left_before = entry['max_actions_per_traj'] - entry['status'].num_actions
 
-            # execute actions in envs
             valid_actions = self._extract_map_valid_actions(entry, env_input['actions'])
-            acc_reward, turn_info, turn_done, executed_actions = _execute_actions(env, valid_actions[:actions_left_before])
+            acc_reward, turn_info, turn_done, executed_actions = _execute_actions(entry, valid_actions[:actions_left_before])
             if len(valid_actions) != len(env_input['actions']) or not valid_actions:
                 self.rollout_cache[env_id]["penalty"] += self.sys_config.es_manager.format_penalty
                 
@@ -249,19 +569,28 @@ class EnvStateManager:
             if not turn_done: # NOTE done environments are not sent for further llm generation (for efficiency)
                 env_outputs.append(self.rollout_cache[env_id])
 
-        return env_outputs
+        # Evaluation rollouts in the same lead group share one oracle budget.
+        # A later sibling can exhaust it after an earlier sibling was queued for
+        # another model turn, so remove every member of that group here.
+        return [
+            output
+            for output in env_outputs
+            if (
+                envs[output['env_id']].get('_evaluation_budget_state') is None
+                or envs[output['env_id']]['_evaluation_budget_state']['oracle_calls']
+                < envs[output['env_id']]['_evaluation_budget_state']['limit']
+            )
+        ]
 
     def get_rollout_states(self):
-        """Get the final output for all environment - Modified for molecule-level metrics"""
+        """Get final rollout states with molecule-level metrics."""
         envs = self.envs
         rollout_cache = self.rollout_cache
         TURN_LVL_METRICS = ['action_is_effective', 'action_is_valid', 'end_of_page']
 
-        # First pass: Update global best results for molecule optimization
         for entry, cache in zip(envs, rollout_cache):
             status = entry['status']
             
-            # --- Update Global Best Results for Molecule Optimization --- 
             if hasattr(entry['env'], '_original_base_molecule_smiles'):
                 initial_smiles_key = entry['env']._original_base_molecule_smiles # Use original SMILES as key
                 episode_best_score = entry['env']._best_score
@@ -271,67 +600,49 @@ class EnvStateManager:
                 episode_oracle_calls = entry['env']._oracle_calls_this_episode # Get real oracle calls from this episode (no cache)
                 episode_total_oracle_calls = entry['env']._total_oracle_calls_this_episode # Get total oracle calls from this episode (including cache)
 
-                # --- Update Cumulative Oracle Call Trackers (accumulate oracle calls from all paths) --- 
                 if initial_smiles_key is not None:
-                     # Real oracle calls (no cache hits)
                      current_calls = self.oracle_call_budget_tracker.get(initial_smiles_key, 0)
                      self.oracle_call_budget_tracker[initial_smiles_key] = current_calls + episode_oracle_calls
                      
-                     # Total oracle calls (including cache hits)
                      current_total_calls = self.total_oracle_call_budget_tracker.get(initial_smiles_key, 0)
                      self.total_oracle_call_budget_tracker[initial_smiles_key] = current_total_calls + episode_total_oracle_calls
-                # -------------------------------------------
 
                 if initial_smiles_key is not None: # Ensure we have a key
                     current_global_best = self.global_best_results.get(initial_smiles_key, None)
                     
-                    # Get current episode's best score (for comparison)
                     env = entry['env']
                     current_episode_best_score = episode_best_score
                     
-                    # Check if this is a multi-objective task
                     is_multi_objective = hasattr(env, 'molecule_opt_task') and '+' in env.molecule_opt_task
                     
-                    # Determine comparison criteria
                     is_better = False
                     if current_global_best is None:
                         is_better = True
                     else:
                         if is_multi_objective:
-                            # Multi-objective task: compare weighted_score
                             current_weighted_score = getattr(env, '_best_weighted_score', float('-inf'))
                             stored_weighted_score = current_global_best.get('weighted_score', float('-inf'))
                             is_better = current_weighted_score > stored_weighted_score
                         else:
-                            # Single-objective task: compare based on optimization direction
                             is_sa_task = hasattr(env, 'minimize_target') and env.minimize_target
                             if is_sa_task:
-                                # For SA: smaller scores are better
                                 is_better = current_episode_best_score < current_global_best['best_score']
                             else:
-                                # For other properties: larger scores are better
                                 is_better = current_episode_best_score > current_global_best['best_score']
                     
-                    # Update if new or if the new episode best score is better than the stored global best
                     if is_better:
-                        # print(f"[DEBUG] Updating global best for {initial_smiles_key}: {episode_best_score:.4f} (was {current_global_best['best_score'] if current_global_best else 'None'})")
-                        
-                        # Build base result data
                         result_data = {
                             'initial_smiles': initial_smiles_key, # Store explicitly for JSON clarity
                             'initial_score': initial_score,
                             'best_score': episode_best_score,
                             'best_smiles': episode_best_smiles,
                             'similarity_at_best': similarity_at_best, # Store the similarity
-                            # Store the CUMULATIVE calls up to the point this new best was found
                             'total_oracle_calls': self.oracle_call_budget_tracker.get(initial_smiles_key, 0),
                             'success': True  # Mark as successful since we found a better score
                         }
                         
-                        # For multi-objective tasks, get data directly from environment
                         env = entry['env']
                         if is_multi_objective:
-                            # Get best data directly from environment, not rebuild from history
                             if hasattr(env, '_best_weighted_score'):
                                 result_data['weighted_score'] = env._best_weighted_score
                             
@@ -341,7 +652,6 @@ class EnvStateManager:
                             if hasattr(env, '_best_global_improvements') and env._best_global_improvements:
                                 result_data['individual_improvements'] = env._best_global_improvements.copy()
                             
-                            # Get original property values
                             if hasattr(env, '_original_base_molecule_smiles'):
                                 task_properties = env.molecule_opt_task.split('+')
                                 try:
@@ -352,33 +662,24 @@ class EnvStateManager:
                                 except Exception as e:
                                     print(f"Warning: Failed to get original properties for {initial_smiles_key}: {e}")
                             
-                            # For multi-objective tasks, use weighted_score as best_score for comparison display
                             if 'weighted_score' in result_data:
                                 result_data['best_score'] = result_data['weighted_score']
                         
                         self.global_best_results[initial_smiles_key] = result_data
-                    # --- Ensure existing entries also get updated total_oracle_calls for JSON --- 
                     elif current_global_best is not None:
-                         # If not updating best score, still update the total call count in the record for the JSON snapshot
                          self.global_best_results[initial_smiles_key]['total_oracle_calls'] = self.oracle_call_budget_tracker.get(initial_smiles_key, 0)
         
-        # Second pass: Calculate molecule-level metrics
         molecule_metrics = self._calculate_molecule_level_metrics(envs, rollout_cache)
         
-        # Calculate multi-objective metrics
         multi_objective_metrics = self._calculate_multi_objective_metrics(molecule_metrics)
         
-        # Third pass: Assign molecule-level metrics to rollout cache
         for entry, cache in zip(envs, rollout_cache):
             status = entry['status']
             
-            # Get molecule ID and related info
-            molecule_id = entry['env_id'] // self.config.group_size if hasattr(self.config, 'group_size') else entry['env_id']
             initial_smiles = None
             if hasattr(entry['env'], '_original_base_molecule_smiles'):
                 initial_smiles = entry['env']._original_base_molecule_smiles
             
-            # Use molecule-level metrics instead of path-level
             if initial_smiles and initial_smiles in molecule_metrics:
                 mol_metrics = molecule_metrics[initial_smiles]
                 env_metric = {
@@ -391,23 +692,19 @@ class EnvStateManager:
                     'improvement': mol_metrics['improvement']
                 }
             else:
-                # Fallback to path-level metrics if molecule-level not available
                 env_metric = {
                     'success': float(status.terminated and (not status.truncated)),
                     'num_actions': status.num_actions,
                 }
                 
-                # Add molecule-specific metrics if available
                 if hasattr(entry['env'], '_original_base_molecule_smiles'):
                     initial_smiles_key = entry['env']._original_base_molecule_smiles
                     if initial_smiles_key in self.global_best_results:
                         env_metric['current_global_best_score_for_mol'] = self.global_best_results[initial_smiles_key]['best_score']
 
-            # Process custom metrics (turn-level info) - collect for molecule-level aggregation
             custom_metric = {}
             for turn in cache['history']:
                 for k, v in turn.get('info', {}).items():
-                    # Skip debug/internal fields (starting with underscore) and other non-metric fields
                     if (k == 'success' or 
                         k in ['final_smiles', 'action_received', 'initial_smiles', 'current_best_smiles'] or
                         k.startswith('_')):  # Skip fields starting with underscore (debug/internal fields)
@@ -417,16 +714,12 @@ class EnvStateManager:
                     try:
                         custom_metric[k].append(float(v))
                     except (ValueError, TypeError):
-                        # Silently skip non-numeric values to reduce log noise
                         pass
             
-            # Use molecule-level aggregated metrics when available
             if initial_smiles and initial_smiles in molecule_metrics:
                 mol_metrics = molecule_metrics[initial_smiles]
-                # For molecule-level: use aggregated custom metrics from all paths
                 for k, v in custom_metric.items():
                     if "Webshop" not in k or ("Webshop" in k and k in TURN_LVL_METRICS):
-                        # For molecule-level: use best values across all paths of this molecule
                         if k in ['score_after', 'current_best_score', 'similarity', 'qed_score']:
                             env_metric[k] = mol_metrics.get(f'best_{k}', max(v) if v else 0.0)
                         elif k in ['score_before', 'initial_score']:
@@ -438,7 +731,6 @@ class EnvStateManager:
                     else:
                         env_metric[k] = np.sum(v)
             else:
-                # Fallback to path-level metrics
                 for k, v in custom_metric.items():
                     if "Webshop" not in k or ("Webshop" in k and k in TURN_LVL_METRICS):
                         if k in ['score_after', 'current_best_score', 'similarity', 'qed_score']:
@@ -458,19 +750,135 @@ class EnvStateManager:
             if entry['tag'] == "MetamathQA":
                 cache['correct_answer'] = entry['env'].correct_answer
         
-        # Add multi-objective metrics to the first cache (they are batch-level metrics)
         if rollout_cache and multi_objective_metrics:
-            # Find a MoleculeOptimization cache to add batch-level metrics
             for cache in rollout_cache:
                 if 'metrics' in cache and any('MoleculeOptimization' in key for key in cache['metrics'].keys()):
-                    # Add multi-objective metrics with proper prefixes
                     for metric_key, metric_value in multi_objective_metrics.items():
                         prefixed_key = f"MoleculeOptimization/{metric_key}"
                         if prefixed_key not in cache['metrics']:
                             cache['metrics'][prefixed_key] = metric_value
                     break
-                    
+
+        if self.mode == 'train':
+            self._extract_skills_from_rollouts(envs, rollout_cache)
+
         return rollout_cache
+
+    def _extract_skills_from_rollouts(self, envs, rollout_cache):
+        """Distill adjacent molecular transitions into skill-memory entries.
+
+        Only successful transitions are retained. For multi-objective tasks,
+        every direction-normalized objective must improve by ``min_delta``;
+        trade-offs and unchanged objectives are discarded.
+        """
+        self._skill_candidates = []
+        config = self.sys_config.get('evolving_skill_memory', {})
+        min_step = int(config.get('min_step_for_experience', 5))
+        if min_step < 0:
+            raise ValueError("min_step_for_experience must be non-negative")
+        if getattr(self, 'current_epoch', 0) < min_step:
+            return
+
+        extraction_config = config.get('extraction', {})
+        min_delta = extraction_config.get(
+            'min_score_delta', config.get('min_score_delta', 0.1)
+        )
+        for entry, cache in zip(envs, rollout_cache):
+            env = entry['env']
+            if not hasattr(env, '_original_base_molecule_smiles'):
+                continue
+
+            task = getattr(env, 'molecule_opt_task', 'unknown')
+            task_properties = task.split('+')
+            original_smiles = env._original_base_molecule_smiles
+            history = cache.get('history', [])
+
+            for index, turn in enumerate(history):
+                info = turn.get('info', {})
+                if index == 0:
+                    smiles_before = original_smiles
+                else:
+                    smiles_before = history[index - 1].get('info', {}).get('final_smiles')
+
+                transition_infos = info.get('_skill_transitions')
+                if not transition_infos:
+                    continue
+                if not isinstance(transition_infos, list):
+                    raise ValueError("_skill_transitions must be a list")
+                for transition_info in transition_infos:
+                    smiles_after = transition_info.get('final_smiles')
+                    score_before = transition_info.get('score_before')
+                    score_after = transition_info.get('score_after')
+
+                    if score_before is None or score_after is None:
+                        if smiles_after:
+                            smiles_before = smiles_after
+                        continue
+                    if (
+                        not smiles_before
+                        or not smiles_after
+                        or smiles_before == smiles_after
+                    ):
+                        if smiles_after:
+                            smiles_before = smiles_after
+                        continue
+
+                    objective_deltas = {}
+                    memory_score_before = float(score_before)
+                    memory_score_after = float(score_after)
+
+                    if len(task_properties) > 1:
+                        multi_info = transition_info.get('multi_objective_info', {})
+                        step_deltas = multi_info.get('step_improvements', {})
+                        if any(prop not in step_deltas for prop in task_properties):
+                            smiles_before = smiles_after
+                            continue
+
+                        directions = getattr(env, 'optimization_directions', {})
+                        accepted, normalized_delta, objective_deltas = (
+                            classify_multi_objective_transition(
+                                {
+                                    prop: step_deltas[prop]
+                                    for prop in task_properties
+                                },
+                                directions,
+                                min_delta,
+                            )
+                        )
+
+                        if not accepted:
+                            smiles_before = smiles_after
+                            continue
+
+                        memory_score_before = 0.0
+                        memory_score_after = normalized_delta
+                    else:
+                        raw_delta = float(score_after) - float(score_before)
+                        minimize = getattr(env, 'minimize_target', False)
+                        normalized_delta = -raw_delta if minimize else raw_delta
+                        objective_deltas[task] = normalized_delta
+                        if normalized_delta < min_delta:
+                            smiles_before = smiles_after
+                            continue
+
+                    try:
+                        skill = extract_experience_from_trajectory(
+                            before_smiles=smiles_before,
+                            after_smiles=smiles_after,
+                            trajectory=[smiles_before, smiles_after],
+                            score_before=memory_score_before,
+                            score_after=memory_score_after,
+                            task=task,
+                            epoch=getattr(self, 'current_epoch', 0),
+                            objective_deltas=objective_deltas,
+                        )
+                        self._skill_candidates.append(skill)
+                    except Exception as exc:
+                        logger.debug(
+                            "Skipping invalid skill-memory transition: %s", exc
+                        )
+                    finally:
+                        smiles_before = smiles_after
 
     def _calculate_molecule_level_metrics(self, envs, rollout_cache):
         """Calculate molecule-level metrics by aggregating across all paths for each molecule"""
@@ -487,7 +895,6 @@ class EnvStateManager:
             'custom_metrics': defaultdict(list)
         })
         
-        # Group by molecule (initial SMILES)
         for entry, cache in zip(envs, rollout_cache):
             if not hasattr(entry['env'], '_original_base_molecule_smiles'):
                 continue
@@ -495,18 +902,15 @@ class EnvStateManager:
             initial_smiles = entry['env']._original_base_molecule_smiles
             status = entry['status']
             
-            # Get path-level metrics
             path_success = bool(status.terminated and (not status.truncated))
             path_score = getattr(entry['env'], '_best_score', 0.0)
             path_similarity = getattr(entry['env'], '_similarity_at_best_score', 0.0)
             path_num_actions = status.num_actions
             initial_score = getattr(entry['env'], '_initial_score', 0.0)
             
-            # Collect custom metrics from this path
             path_custom_metrics = {}
             for turn in cache['history']:
                 for k, v in turn.get('info', {}).items():
-                    # Skip debug/internal fields (starting with underscore) and other non-metric fields
                     if (k == 'success' or 
                         k in ['final_smiles', 'action_received', 'initial_smiles', 'current_best_smiles'] or
                         k.startswith('_')):  # Skip fields starting with underscore (debug/internal fields)
@@ -518,7 +922,6 @@ class EnvStateManager:
                     except (ValueError, TypeError):
                         continue
             
-            # Update molecule-level aggregates
             mol_data = molecule_data[initial_smiles]
             mol_data['paths'].append({
                 'success': path_success,
@@ -528,28 +931,22 @@ class EnvStateManager:
                 'custom_metrics': path_custom_metrics
             })
             
-            # Set initial score (should be same across all paths)
             if mol_data['initial_score'] is None:
                 mol_data['initial_score'] = initial_score
             
-            # Update best values across all paths
             if path_score > mol_data['best_score']:
                 mol_data['best_score'] = path_score
                 mol_data['best_similarity'] = path_similarity
                 mol_data['best_num_actions'] = path_num_actions
             
-            # Molecule is successful if ANY path is successful
             if path_success:
                 mol_data['success'] = True
             
-            # Calculate improvement
             mol_data['improvement'] = mol_data['best_score'] - mol_data['initial_score']
             
-            # Aggregate custom metrics across all paths for this molecule
             for k, v_list in path_custom_metrics.items():
                 mol_data['custom_metrics'][k].extend(v_list)
         
-        # Calculate molecule-level custom metrics
         for smiles, mol_data in molecule_data.items():
             for k, v_list in mol_data['custom_metrics'].items():
                 if k in ['score_after', 'current_best_score', 'similarity', 'qed_score']:
@@ -575,10 +972,8 @@ class EnvStateManager:
         """
         from ragen.env.molecule_opt.property_utils import PROPERTY_SUCCESS_THRESHOLDS, get_supported_properties
         
-        # Get supported properties
         all_properties = get_supported_properties()
         
-        # Initialize statistics data
         property_stats = {prop: {
             'improvements': [],
             'initial_scores': [],
@@ -588,11 +983,9 @@ class EnvStateManager:
             'above_threshold_count': 0
         } for prop in all_properties}
         
-        # QED special statistics (success rate >0.9)
         qed_above_09_count = 0
         total_molecules = len(molecule_data)
         all_targets_success_count = 0
-        single_target_success_count = 0
         
         for smiles, mol_data in molecule_data.items():
             # Check if there is multi-objective information
@@ -629,7 +1022,7 @@ class EnvStateManager:
             # If no multi-objective information is found, try to infer from custom metrics
             if not multi_obj_info:
                 # Check if there are property-related metrics to infer this is a multi-objective task
-                property_keys = ['qed', 'logp', 'sa', 'jnk3', 'gsk3b', 'drd2']
+                property_keys = ['qed', 'logp', 'sa', 'jnk3', 'drd2']
                 found_properties = []
                 
                 for path_data in mol_data['paths']:
@@ -652,7 +1045,6 @@ class EnvStateManager:
             new_properties = multi_obj_info.get('new_properties', {})
             success_status = multi_obj_info.get('success_status', {})
             
-            # Statistics for each property
             all_success = True
             for prop in task_properties:
                 if prop in old_properties and prop in new_properties:
@@ -667,18 +1059,15 @@ class EnvStateManager:
                         improvement = final_score - initial_score  # Other properties increasing is good
                         best_score = max(initial_score, final_score)  # Other properties larger is better
                     
-                    # Basic statistics
                     property_stats[prop]['improvements'].append(improvement)
                     property_stats[prop]['initial_scores'].append(initial_score)
                     property_stats[prop]['best_scores'].append(best_score)
                     property_stats[prop]['total_count'] += 1
                     
-                    # Success rate statistics (using unified threshold criteria)
                     from ragen.env.molecule_opt.property_utils import PROPERTY_SUCCESS_THRESHOLDS
                     
                     prop_success_status = success_status.get(prop, {})
                     
-                    # Use unified threshold to determine success
                     is_success = False
                     if prop in PROPERTY_SUCCESS_THRESHOLDS:
                         threshold = PROPERTY_SUCCESS_THRESHOLDS[prop]["threshold"]
@@ -689,7 +1078,6 @@ class EnvStateManager:
                         else:  # direction == "decrease" (SA)
                             is_success = improvement <= -threshold
                     else:
-                        # Properties without defined thresholds, any improvement counts as success
                         is_success = improvement > 0
                     
                     # Compatible with original success_status (if available)
@@ -704,21 +1092,15 @@ class EnvStateManager:
     
             if len(task_properties) > 1 and all_success:
                 all_targets_success_count += 1
-            elif len(task_properties) == 1 and all_success:
-                single_target_success_count += 1
-                
             if 'qed' in task_properties:
-                # Use best_score calculated in the loop
                 qed_best_score = property_stats['qed']['best_scores'][-1] if property_stats['qed']['best_scores'] else 0
                 if qed_best_score > 0.9:
                     qed_above_09_count += 1
             elif 'qed' in new_properties and new_properties['qed'] > 0.9:
                 qed_above_09_count += 1
         
-        # Calculate summary metrics
         multi_objective_metrics = {}
         
-        # Key statistics for each property (remove unnecessary metrics)
         for prop in all_properties:
             stats = property_stats[prop]
             if stats['total_count'] > 0:
@@ -735,17 +1117,6 @@ class EnvStateManager:
             multi_objective_metrics['reward/positive_rate'] = np.sum(np.array(reward_histories) > 0) / len(reward_histories)
         
         return multi_objective_metrics
-
-    def get_average_global_best_score(self):
-        """Calculate the average of the best scores achieved across all tracked initial molecules."""
-        if not self.global_best_results:
-            return 0.0 # Or handle as needed, e.g., return None or float('nan')
-        
-        tracked_scores = [data['best_score'] for data in self.global_best_results.values()]
-        if not tracked_scores:
-             return 0.0
-             
-        return sum(tracked_scores) / len(tracked_scores)
 
     def get_average_oracle_calls_per_molecule(self):
         """Calculate the average of real oracle calls per molecule (accumulate call counts from all paths, excluding cache and initial scoring)."""
@@ -765,37 +1136,6 @@ class EnvStateManager:
         num_molecules = len(self.total_oracle_call_budget_tracker)
         return total_calls / num_molecules if num_molecules > 0 else 0.0
     
-    def get_total_unique_oracle_calls(self):
-        """Get total unique oracle calls by accessing oracle cache size."""
-        total_unique_calls = 0
-        
-        # Try to get the actual oracle call count from the environment
-        for env_entry in self.envs:
-            if env_entry and 'env' in env_entry:
-                env = env_entry['env']
-                if hasattr(env, 'oracle') and hasattr(env.oracle, 'calls'):
-                    # Oracle's calls attribute records actual non-cached call counts
-                    total_unique_calls = max(total_unique_calls, env.oracle.calls)
-                    break  # All environments share the same oracle instance
-        
-        return total_unique_calls
-
-    def get_average_improvement(self):
-        """Calculate the average improvement: best_score - initial_score across all tracked molecules."""
-        if not self.global_best_results:
-            return 0.0
-        
-        improvements = []
-        for data in self.global_best_results.values():
-            if 'best_score' in data and 'initial_score' in data:
-                improvement = data['best_score'] - data['initial_score']
-                improvements.append(improvement)
-        
-        if not improvements:
-            return 0.0
-            
-        return sum(improvements) / len(improvements)
-    
     def get_average_similarity_at_best(self):
         """Calculate the average similarity at best score across all tracked molecules."""
         if not self.global_best_results:
@@ -811,50 +1151,39 @@ class EnvStateManager:
             
         return sum(similarities) / len(similarities)
     
-    def get_skill_memory_stats(self):
-        """Get statistics about the Evolving Skill Memory"""
-        if self.skill_memory is None:
-            return {}
-        return self.skill_memory.get_stats()
-
     def save_skill_memory(self):
         """Save the Evolving Skill Memory to disk"""
-        if self.skill_memory is not None:
-            self.skill_memory.save()
-    
-    def get_current_batch_similarity_stats(self):
-        """Calculate similarity statistics for the current batch of trajectories."""
-        if not self.rollout_cache:
-            return {'mean': 0.0, 'min': 0.0, 'max': 0.0, 'count': 0, 'below_threshold_ratio': 0.0}
-        
-        all_similarities = []
-        similarity_threshold = 0.4  # Current fixed threshold used
-        below_threshold_count = 0
-        
-        for cache in self.rollout_cache:
-            if cache.get('history'):
-                for turn in cache['history'][:-1]:  # Exclude last observation
-                    info = turn.get('info', {})
-                    if 'similarity' in info:
-                        try:
-                            sim = float(info['similarity'])
-                            all_similarities.append(sim)
-                            if sim < similarity_threshold:
-                                below_threshold_count += 1
-                        except (ValueError, TypeError):
-                            pass
-        
-        if not all_similarities:
-            return {'mean': 0.0, 'min': 0.0, 'max': 0.0, 'count': 0, 'below_threshold_ratio': 0.0}
-        
-        return {
-            'mean': sum(all_similarities) / len(all_similarities),
-            'min': min(all_similarities),
-            'max': max(all_similarities),
-            'count': len(all_similarities),
-            'below_threshold_ratio': below_threshold_count / len(all_similarities)
-        }
-    
+        self.skill_memory.save()
+
+    def set_current_epoch(self, epoch: int):
+        """Set the creation epoch attached to subsequently extracted skills."""
+        self.current_epoch = epoch
+
+    def trigger_gpt_summarization(self) -> int:
+        """Summarize this step's candidates once and store validated skills."""
+        config = self.sys_config.get('evolving_skill_memory', {}).get('gpt_summary', {})
+        candidates = self._skill_candidates
+        self._skill_candidates = []
+        if not candidates:
+            return 0
+
+        summaries = self.skill_memory.generate_gpt_summaries(
+            experiences=candidates,
+            total_timeout=config.get('total_timeout', 600),
+            max_workers=config.get('max_workers', 8),
+            model=config.get('model'),
+            credential_env_prefix=config.get(
+                'credential_env_prefix', 'AZURE_OPENAI'
+            ),
+            max_completion_tokens=config.get('max_completion_tokens', 150),
+            reasoning_effort=config.get('reasoning_effort'),
+        )
+        added = 0
+        for candidate in candidates:
+            if candidate.exp_id in summaries:
+                added += int(self.skill_memory.add_experience(candidate))
+        return added
+
     def get_current_batch_success_rate(self):
         """Calculate success rate for the current batch of trajectories.
         For multi-objective tasks, returns overall success rate (all properties improved).
@@ -873,9 +1202,7 @@ class EnvStateManager:
             total_count = 0
             
             for cache in self.rollout_cache:
-                # Check if this trajectory has all targets success
                 if 'history' in cache:
-                    # Find the last turn containing multi_objective_info
                     all_success = False
                     for turn in reversed(cache['history']):
                         info = turn.get('info', {})
@@ -893,13 +1220,11 @@ class EnvStateManager:
             
             return success_count / total_count
         else:
-            # Single-objective task: use original logic
             success_count = 0
             total_count = 0
             
             for cache in self.rollout_cache:
                 if 'metrics' in cache:
-                    # Get success information from metrics
                     success = cache['metrics'].get(f"{cache.get('tag', 'Unknown')}/success", 0.0)
                     success_count += success
                     total_count += 1
@@ -909,22 +1234,6 @@ class EnvStateManager:
             
             return success_count / total_count
     
-    def get_current_batch_molecule_success_rate(self):
-        """Calculate molecule-level success rate for the current batch."""
-        if not self.rollout_cache:
-            return 0.0
-        
-        # Calculate molecule-level metrics using the existing method
-        molecule_metrics = self._calculate_molecule_level_metrics(self.envs, self.rollout_cache)
-        
-        if not molecule_metrics:
-            return 0.0
-        
-        successful_molecules = sum(1 for mol_data in molecule_metrics.values() if mol_data['success'])
-        total_molecules = len(molecule_metrics)
-        
-        return successful_molecules / total_molecules if total_molecules > 0 else 0.0
-
     def _update_cache_history(self, history: List[Dict], next_state, actions_left, num_actions_info: Optional[Dict] = None):
         """
         Update last step info and append state to history
@@ -968,7 +1277,6 @@ class EnvStateManager:
             results = [PIL.Image.fromarray(_state, mode='RGB') for _state in state]
             return results
         else:
-            # Fallback for other types
             return str(state)
         
     def render(self):
@@ -978,76 +1286,3 @@ class EnvStateManager:
     def close(self):
         for entry in self.envs:
             entry['env'].close()
-
-
-
-
-@hydra.main(version_base=None, config_path="../../config", config_name="base")
-def main(config):
-    """
-    Unit test for EnvStateManager
-    """
-    es_manager = EnvStateManager(config, mode="train")
-    print("Initializing environments...")
-    es_manager.reset(seed=123)
-
-    renders = es_manager.render()
-    for i, render in enumerate(renders[:4]):  # Show first 2 environments
-        print(f"Environment {i}:\n{render}\n")
-    
-    print("\nRunning step for training environments...")
-    all_env_inputs = [
-        {
-            "env_id": 0,
-            "llm_raw_response": "Go down",
-            "llm_response": "Go down",
-            "actions": ["down"]
-        },
-        {
-            "env_id": 3,
-            "llm_raw_response": "Go down",
-            "llm_response": "Go down",
-            "actions": ["down"]
-        }
-    ]
-    env_outputs = es_manager.step(all_env_inputs)
-    print(f"Active environments after step: {len(env_outputs)}")
-    print(f"env_outputs[:2]: {env_outputs[:2]}")
-    
-    renders = es_manager.render()
-    for i, render in enumerate(renders[:4]):  # Show first 2 environments
-        print(f"Environment {i}:\n{render}\n")
-
-    all_env_inputs = [
-        {
-            "env_id": 0,
-            "llm_raw_response": "Go left, go up",
-            "llm_response": "Go left, go up",
-            "actions": ["left", "up"]
-        },
-        {
-            "env_id": 3,
-            "llm_raw_response": "Go up, go up",
-            "llm_response": "Go up, go up",
-            "actions": ["up", "up", "up", "up", "up"]
-        }
-    ]
-    env_outputs = es_manager.step(all_env_inputs)
-    print(f"Active environments after step: {len(env_outputs)}")
-    print(f"env_outputs[:2]: {env_outputs[:2]}")
-    
-    renders = es_manager.render()
-    for i, render in enumerate(renders[:4]):  # Show first 2 environments
-        print(f"Environment {i}:\n{render}\n")
-    
-    print("\nRendering final output...")
-    final_outputs = es_manager.get_rollout_states()
-    print(f"final outputs[:4]: {final_outputs[:4]}")
-    
-    print("\nClosing environments...")
-    es_manager.close()
-    print("Test completed successfully!")
-
-
-if __name__ == "__main__":
-	main()

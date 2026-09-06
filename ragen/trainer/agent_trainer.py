@@ -7,29 +7,20 @@ import json
 import os
 import uuid
 from collections import defaultdict
-from contextlib import contextmanager
-from copy import deepcopy
-from dataclasses import dataclass, field
-from enum import Enum
 from pprint import pprint
-from typing import Dict, Optional, Type
+from typing import Type
 
 import numpy as np
 import ray
 import torch
-from codetiming import Timer
 from omegaconf import OmegaConf, open_dict
-from torch.utils.data import Dataset, Sampler
-from torchdata.stateful_dataloader import StatefulDataLoader
 from tqdm import tqdm
 
 from verl import DataProto
-from verl.protocol import pad_dataproto_to_divisor, unpad_dataproto
 from verl.single_controller.base import Worker
-from verl.single_controller.ray import RayClassWithInitArgs, RayResourcePool, RayWorkerGroup
+from verl.single_controller.ray import RayClassWithInitArgs, RayWorkerGroup
 from verl.single_controller.ray.base import create_colocated_worker_cls
 from ragen.trainer import core_algos
-from ragen.trainer.core_algos import agg_loss
 from verl.trainer.ppo.metric_utils import (
     compute_data_metrics,
     compute_throughout_metrics,
@@ -38,10 +29,7 @@ from verl.trainer.ppo.metric_utils import (
     reduce_metrics,
 )
 from verl.trainer.ppo.reward import compute_reward, compute_reward_async
-from verl.utils.checkpoint.checkpoint_manager import find_latest_ckpt_path
-from verl.utils.seqlen_balancing import get_seqlen_balanced_partitions, log_seqlen_unbalance
 from verl.utils.torch_functional import masked_mean
-from verl.utils.tracking import ValidationGenerationsLogger
 from verl.workers.rollout.async_server import AsyncLLMServerManager
 
 WorkerType = Type[Worker]
@@ -49,9 +37,6 @@ WorkerType = Type[Worker]
 
 from verl.trainer.ppo.ray_trainer import Role, ResourcePoolManager, compute_response_mask, _timer, apply_kl_penalty, AdvantageEstimator
 from verl.trainer.ppo.ray_trainer import RayPPOTrainer as VerlRayPPOTrainer
-
-import torch
-from verl.utils.torch_functional import masked_mean
 
 from ragen.llm_agent.agent_proxy import LLMAgentProxy
 from ragen.utils import GenerationsLogger
@@ -230,18 +215,18 @@ def compute_advantage(data: DataProto, adv_estimator, gamma=1.0, lam=1.0, num_re
             raise ValueError(f"Unsupported base_estimator: {base_estimator}")
         
         # ===============================
-        # 2. 计算Final-level Advantages  
+        # 2. Compute final-level advantages.
         # ===============================
         final_data = data.batch.copy()
         if "rm_scores" in data.batch and data.batch["rm_scores"] is not None:
-            # 使用final rewards，需要扩展到token level
+            # Expand final rewards to token level.
             final_rewards = data.batch["rm_scores"]  # shape: (batch_size,)
             if final_rewards.dim() == 1:
-                # 扩展final reward到所有response tokens的最后一个位置
+                # Put each final reward at the last response token.
                 final_token_rewards = torch.zeros_like(data.batch["token_level_rewards"])
                 batch_size, seq_len = final_token_rewards.shape
                 
-                # 找到每个序列response的最后一个token位置
+                # Locate the last response token in each sequence.
                 for i in range(batch_size):
                     response_positions = (response_mask[i] > 0).nonzero(as_tuple=True)[0]
                     if len(response_positions) > 0:
@@ -252,7 +237,7 @@ def compute_advantage(data: DataProto, adv_estimator, gamma=1.0, lam=1.0, num_re
             else:
                 final_data["token_level_rewards"] = final_rewards
         else:
-            # 如果没有rm_scores，使用现有的token_level_rewards作为final
+            # Fall back to the existing token-level rewards when RM scores are absent.
             final_data["token_level_rewards"] = data.batch["token_level_rewards"]
             print("Warning: rm_scores not found, using token_level_rewards for final advantages")
         
@@ -281,16 +266,15 @@ def compute_advantage(data: DataProto, adv_estimator, gamma=1.0, lam=1.0, num_re
             )
         
         # ===============================
-        # 3. 加权组合Advantages
+        # 3. Combine the advantages with the configured weights.
         # ===============================
         combined_advantages = turn_weight * turn_advantages + final_weight * final_advantages
         combined_returns = turn_weight * turn_returns + final_weight * final_returns
         
-        # 设置组合后的advantages和returns
+        # Store the combined advantages and returns.
         data.batch["advantages"] = combined_advantages
         data.batch["returns"] = combined_returns
         
-        # 保存原始advantages用于分析（可选）
         data.batch["turn_advantages"] = turn_advantages
         data.batch["final_advantages"] = final_advantages
         data.batch["turn_returns"] = turn_returns
@@ -327,6 +311,19 @@ class RayAgentTrainer(VerlRayPPOTrainer):
         # do not use the original val logger, but use this here
         self.generations_logger = GenerationsLogger()
 
+    def _load_checkpoint(self):
+        """Restore the skill bank only alongside an actual trainer checkpoint."""
+        result = super()._load_checkpoint()
+        if self.global_steps > 0:
+            manager = getattr(
+                getattr(self, 'agent_proxy', None), 'train_es_manager', None
+            )
+            if manager is not None:
+                restored = manager.load_training_skill_memory()
+                if restored:
+                    self.agent_proxy.val_es_manager.enable_validation_skill_memory_reload()
+        return result
+
         
     def _create_dataloader(self, train_dataset, val_dataset, collate_fn, train_sampler):
         assert self.config.trainer.total_training_steps is not None, "must determine total training steps"
@@ -344,10 +341,6 @@ class RayAgentTrainer(VerlRayPPOTrainer):
                     self.config.critic.optim.total_training_steps = total_training_steps
         except Exception as e:
             print(f"Warning: Could not set total_training_steps in config. Structure missing? Error: {e}")
-        # val_start = 100000
-        # self.train_seeds = [seed for seed in range(0, self.config.trainer.total_training_steps * 1000, 1000)]
-        # self.val_seeds = [seed for seed in range(val_start, val_start + self.config.trainer.validation_steps)]
-
     def init_agent_proxy(self):
         self.agent_proxy = LLMAgentProxy(
             config=self.config,
@@ -398,42 +391,8 @@ class RayAgentTrainer(VerlRayPPOTrainer):
                 "validate": True,
             }
             test_gen_batch = DataProto(batch=None, non_tensor_batch=None, meta_info=meta_info)
-            print(f"test_gen_batch meta info: {test_gen_batch.meta_info}")
 
-            # pad to be divisible by dp_size
-            import time
-            start_time = time.time()
             test_batch = self.agent_proxy.rollout(test_gen_batch, val=True)
-            end_time = time.time()
-            print(f"validation generation time: {end_time - start_time} seconds")
-            for key, value in test_batch.meta_info["metrics"].items():
-                # Keep essential molecule optimization metrics for validation, including multi-objective metrics
-                essential_single = ["current_best_score", "average_improvement", "oracle_calls"]
-                
-                # Multi-objective property-specific metrics (简化版本)
-                multi_objective_patterns = [
-                    "avg_improvement", "success_rate", "above_0.9_rate"
-                ]
-                
-                # Overall success rate metrics
-                success_patterns = [
-                    "all_targets_success_rate", "single_target_success_rate", 
-                    "qed_above_0.9_rate_overall"
-                ]
-                
-                # Reward distribution metrics
-                reward_patterns = ["reward/mean", "reward/positive_rate"]
-                
-                # Check if this key should be included
-                should_include = (
-                    any(essential in key for essential in essential_single) or
-                    any(pattern in key for pattern in multi_objective_patterns) or
-                    any(pattern in key for pattern in success_patterns) or
-                    any(pattern in key for pattern in reward_patterns)
-                )
-                
-                # Skip old molecule_opt metrics - using new clean validation metrics instead
-
             # Store inputs and outputs
             if "prompts" in test_batch.batch:
                 input_ids = test_batch.batch["prompts"]
@@ -461,9 +420,6 @@ class RayAgentTrainer(VerlRayPPOTrainer):
             if "reward_extra_info" in result and result["reward_extra_info"]:
                 for key, lst in result["reward_extra_info"].items():
                     reward_extra_infos_dict[key].extend(lst)
-            # If no reward_extra_info, initialize with empty lists for expected keys
-            elif "reward_extra_info" not in result:
-                pass  # Just use rewards, no extra info needed
 
             data_source_lst.append(test_batch.non_tensor_batch.get("data_source", ["unknown"] * reward_tensor.shape[0]))
 
@@ -510,9 +466,8 @@ class RayAgentTrainer(VerlRayPPOTrainer):
             val_avg_similarity = self.agent_proxy.val_es_manager.get_average_similarity_at_best()
             metric_dict["val/avg_similarity"] = val_avg_similarity
             
-            # Calculate property-specific validation metrics using the new system
             if hasattr(self.config, 'custom_envs') and 'MoleculeOptimization' in self.config.custom_envs:
-                current_task = getattr(self.config.custom_envs.MoleculeOptimization, 'molecule_opt_task', 'qed')
+                current_task = self.config.custom_envs.MoleculeOptimization.molecule_opt_task
                 best_results_dict = self.agent_proxy.val_es_manager.global_best_results
                 
                 if best_results_dict:
@@ -678,6 +633,18 @@ class RayAgentTrainer(VerlRayPPOTrainer):
         with open(local_latest_checkpointed_iteration, "w") as f:
             f.write(str(self.global_steps))
 
+    def _maintain_skill_memory(self):
+        """Summarize this step's new skills and persist validated results."""
+        manager = getattr(getattr(self, 'agent_proxy', None), 'train_es_manager', None)
+        if manager is None:
+            return
+
+        manager.set_current_epoch(self.global_steps)
+        new_summaries = manager.trigger_gpt_summarization()
+        if new_summaries > 0:
+            manager.save_skill_memory()
+            self.agent_proxy.val_es_manager.enable_validation_skill_memory_reload()
+
     def _save_best_results_to_json(self):
         """Saves the tracked global best results to a JSON file and calculates property metrics."""
         property_metrics = {}
@@ -702,7 +669,7 @@ class RayAgentTrainer(VerlRayPPOTrainer):
             # Calculate success rates using new unified system
             if hasattr(self.config, 'custom_envs') and 'MoleculeOptimization' in self.config.custom_envs and best_results_dict:
                 # Get current task from config
-                current_task = getattr(self.config.custom_envs.MoleculeOptimization, 'molecule_opt_task', 'qed')
+                current_task = self.config.custom_envs.MoleculeOptimization.molecule_opt_task
                 
                 # Import calculation functions
                 from ragen.env.molecule_opt.property_utils import calculate_success_rates, calculate_property_averages
@@ -765,33 +732,28 @@ class RayAgentTrainer(VerlRayPPOTrainer):
         self.global_steps += 1
         last_val_metrics = None
 
-        def _process_batch_for_logging(batch):
-            inputs = batch.batch["input_ids"]
-            inputs = [self.tokenizer.decode(input_ids, skip_special_tokens=True) for input_ids in inputs]
-            outputs = [""] * len(inputs)
-            scores = batch.batch["rm_scores"].sum(-1).cpu().tolist()
-            return inputs, outputs, scores
-        
         def _filter_by_sequence_length(batch):
-            """过滤过长的序列，避免训练时OOM"""
+            """Filter overlong sequences to avoid training-time OOM errors."""
             enable_length_filtering = getattr(self.config.actor_rollout_ref.rollout, 'enable_length_filtering', True)
             
             if not enable_length_filtering:
                 return batch, {"rollout/length_filtered_count": 0}
                 
             max_allowed_length = self.config.actor_rollout_ref.rollout.max_model_len
-            input_ids = batch.batch["input_ids"]
             attention_mask = batch.batch["attention_mask"]
             
-            # 计算每个序列的实际长度
+            # Compute the actual length of each sequence.
             seq_lengths = attention_mask.sum(dim=-1)
             valid_mask = seq_lengths <= max_allowed_length
             
             num_filtered = (~valid_mask).sum().item()
             if num_filtered > 0:
-                print(f"[长度过滤] 过滤掉 {num_filtered} 个超长序列 (长度 > {max_allowed_length})")
+                print(
+                    f"[Length filter] Removed {num_filtered} overlong sequences "
+                    f"(length > {max_allowed_length})"
+                )
                 
-                # 应用过滤mask
+                # Apply the filtering mask.
                 batch.batch = batch.batch[valid_mask]
                 for key, value in batch.non_tensor_batch.items():
                     if isinstance(value, np.ndarray):
@@ -810,8 +772,6 @@ class RayAgentTrainer(VerlRayPPOTrainer):
 
             rm_scores = batch.batch["original_rm_scores"].sum(dim=-1).view(num_groups, group_size)
             in_group_std = rm_scores.std(dim=-1)
-            in_group_max = rm_scores.max(dim=-1).values
-            in_group_mean = rm_scores.mean(dim=-1)
             if rollout_filter_ratio == 1:
                 return batch, {"rollout/group_variance": in_group_std.mean()}
 
@@ -854,8 +814,6 @@ class RayAgentTrainer(VerlRayPPOTrainer):
             
             # === Stage 1: Variance-based group filtering ===
             in_group_std = rm_scores.std(dim=-1)
-            in_group_max = rm_scores.max(dim=-1).values
-            in_group_mean = rm_scores.mean(dim=-1)
             
             # Select groups based on variance
             if variance_filter_ratio >= 1.0:
@@ -885,15 +843,11 @@ class RayAgentTrainer(VerlRayPPOTrainer):
             if score_filter_ratio >= 1.0:
                 # Keep all samples from selected groups
                 final_mask = stage1_full_mask
-                stage2_kept_per_group = group_size
             else:
                 samples_per_group_to_keep = max(1, int(score_filter_ratio * group_size))
                 final_mask = torch.zeros_like(stage1_full_mask, dtype=torch.bool)
-                
-                stage2_kept_counts = []
                 for group_idx in stage1_selected_groups:
                     group_start = group_idx * group_size
-                    group_end = group_start + group_size
                     group_scores = rm_scores[group_idx]  # Scores for this group
                     
                     # Handle edge case where group has fewer samples than we want to keep
@@ -910,10 +864,6 @@ class RayAgentTrainer(VerlRayPPOTrainer):
                     # Update final mask
                     for idx in top_indices_in_group:
                         final_mask[group_start + idx] = True
-                    
-                    stage2_kept_counts.append(len(top_indices_in_group))
-                
-                stage2_kept_per_group = sum(stage2_kept_counts) / len(stage2_kept_counts) if stage2_kept_counts else 0
 
             # Apply the final mask to batch
             batch.batch = batch.batch[final_mask]
@@ -947,18 +897,9 @@ class RayAgentTrainer(VerlRayPPOTrainer):
                     elif isinstance(value, list):
                         batch.non_tensor_batch[key] = [value[i] for i in reorder_indices]
                 
-                # Debug: Print group structure after reordering
-                if self.global_steps % 10 == 0:  # Only print every 10 steps
-                    reordered_groups = batch.non_tensor_batch["group_ids"]
-                    group_counts = {}
-                    for gid in reordered_groups:
-                        group_counts[gid] = group_counts.get(gid, 0) + 1
-                    print(f"[Group reorder] Step {self.global_steps}: "
-                          f"Groups after filter+reorder: {dict(sorted(group_counts.items()))}")
             # ================================================================================
 
             # Compute metrics
-            selected_group_indices = stage1_selected_groups.cpu().numpy()
             original_batch_size = len(stage1_full_mask)
             final_batch_size = final_mask.sum().item()
             
@@ -967,18 +908,10 @@ class RayAgentTrainer(VerlRayPPOTrainer):
                 "rollout/filter_ratio": final_batch_size / original_batch_size,
             }
             
-            # Optional debug print (can be removed in production)
-            if self.global_steps % 10 == 0:  # Only print every 10 steps to avoid spam
-                print(f"[Two-stage filter] Step {self.global_steps}: "
-                      f"{original_batch_size}→{final_batch_size} samples "
-                      f"(groups: {num_groups}→{len(stage1_selected_groups)}, "
-                      f"samples/group: {group_size}→{stage2_kept_per_group:.1f})")
-            
             return batch, metrics
 
         def _filter_rollout(batch):
             """Choose between original and two-stage filtering based on config"""
-            # 首先进行长度过滤，防止超长序列进入训练
             batch, length_metrics = _filter_by_sequence_length(batch)
             
             filter_mode = self.config.actor_rollout_ref.rollout.get("filter_mode", "original")
@@ -990,104 +923,39 @@ class RayAgentTrainer(VerlRayPPOTrainer):
             else:
                 raise ValueError(f"Invalid filter_mode: {filter_mode}. Must be 'original' or 'two_stage'")
             
-            # 合并metrics
             filter_metrics.update(length_metrics)
             return batch, filter_metrics
 
         import time
         self.start_time = time.time()
         for step in range(self.total_training_steps):
-            # metrics = {}
             timing_raw = {}
 
             batch: DataProto = DataProto()
             is_last_step = self.global_steps >= self.total_training_steps
 
             with _timer("step", timing_raw):
+                train_manager = getattr(
+                    getattr(self, 'agent_proxy', None),
+                    'train_es_manager',
+                    None,
+                )
+                if train_manager is not None:
+                    # Extraction during rollout must use the current step.
+                    train_manager.set_current_epoch(self.global_steps)
+
                 # generate a batch
                 with _timer("gen", timing_raw):
                     batch = self.agent_proxy.rollout(batch, val=False, global_step=self.global_steps, total_training_steps=self.total_training_steps)
-                    # 记录filter前的batch大小
-                    self._last_batch_size_before_filter = len(batch.batch["input_ids"]) if "input_ids" in batch.batch else 0
                     batch, metrics = _filter_rollout(batch)
-                    # Keep essential molecule optimization metrics for training, including multi-objective metrics
-                    for key, value in batch.meta_info["metrics"].items():
-                        # Essential single-objective metrics
-                        essential_single = ["current_best_score", "oracle_calls", "similarity"]
-                        
-                        # Multi-objective property-specific metrics (简化版本)
-                        multi_objective_patterns = [
-                            "avg_improvement", "success_rate", "above_0.9_rate"
-                        ]
-                        
-                        # Overall success rate metrics
-                        success_patterns = [
-                            "all_targets_success_rate", "single_target_success_rate", 
-                            "qed_above_0.9_rate_overall"
-                        ]
-                        
-                        # Reward distribution metrics
-                        reward_patterns = ["reward/mean", "reward/positive_rate"]
-                        
-                        # Check if this key should be included
-                        should_include = False
-                        
-                        # Check essential single-objective metrics
-                        if any(essential in key for essential in essential_single):
-                            should_include = True
-                        
-                        # Check multi-objective property metrics (qed/avg_improvement, logp/success_rate, etc.)
-                        elif any(pattern in key for pattern in multi_objective_patterns):
-                            should_include = True
-                        
-                        # Check overall success rate metrics
-                        elif any(pattern in key for pattern in success_patterns):
-                            should_include = True
-                        
-                        # Check reward metrics
-                        elif any(pattern in key for pattern in reward_patterns):
-                            should_include = True
-                        
-                        # Skip old molecule_opt metrics - using new clean metrics instead
-
-                    inputs, outputs, scores = _process_batch_for_logging(batch)
-                    # self._maybe_log_generations(inputs=inputs, outputs=outputs, scores=scores, _type="train")
-
-
-
-
 
                 if self.config.algorithm.adv_estimator == AdvantageEstimator.REMAX:
-                    # TODO: check if this is correct. Not tested yer
                     logger.log("[NotImplemented] REMAX implementation is not tested yet in RAGEN. Exiting.")
                     exit()
-                    with _timer("gen_max", timing_raw):
-                        gen_baseline_batch = deepcopy(batch)
-                        gen_baseline_batch.meta_info["do_sample"] = False
-                        gen_baseline_output = self.agent_proxy.rollout(gen_baseline_batch, val=False)
-
-                        batch = batch.union(gen_baseline_output)
-                        reward_baseline_tensor = self.reward_fn(batch)
-                        reward_baseline_tensor = reward_baseline_tensor.sum(dim=-1)
-
-                        batch.pop(batch_keys=list(gen_baseline_output.batch.keys()))
-
-                        batch.batch["reward_baselines"] = reward_baseline_tensor
-
-                        del gen_baseline_batch, gen_baseline_output
-
-                # batch.non_tensor_batch["uid"] = np.array([str(uuid.uuid4()) for _ in range(len(batch.batch))],
-                                                            # dtype=object)
-                # repeat to align with repeated responses in rollout
-                # batch = batch.repeat(repeat_times=self.config.actor_rollout_ref.rollout.n, interleave=True)
-                # batch = batch.union(gen_batch_output)
 
                 # NOTE reward normalization already done in ctx_manager, so set group size = 1 here
                 batch.non_tensor_batch["uid"] = np.array([str(uuid.uuid4()) for _ in range(len(batch.batch))],
                                                             dtype=object)
-                # batch.non_tensor_batch["uid"] = batch.non_tensor_batch["group_ids"]
-
-                # batch.batch["response_mask"] = compute_response_mask(batch)
                 batch.batch["response_mask"] = batch.batch["loss_mask"]
                 # balance the number of valid tokens on each dp rank.
                 # Note that this breaks the order of data inside the batch.
@@ -1140,15 +1008,10 @@ class RayAgentTrainer(VerlRayPPOTrainer):
                     # we combine with rule-based rm
                     if self.config.reward_model.launch_reward_fn_async:
                         reward_tensor, reward_extra_infos_dict = ray.get(future_reward)
-                    # reward_extra_infos_dict已经在第786行非异步分支中被赋值
                     batch.batch["token_level_scores"] = reward_tensor
 
-                    # Only print and update if we have valid reward_extra_infos_dict
                     if reward_extra_infos_dict:
-                        print(f"Reward extra info keys: {list(reward_extra_infos_dict.keys())}")
                         batch.non_tensor_batch.update({k: np.array(v) for k, v in reward_extra_infos_dict.items()})
-                    else:
-                        print("No reward extra info available")
                     
 
                     # compute rewards. apply_kl_penalty if available
@@ -1176,7 +1039,6 @@ class RayAgentTrainer(VerlRayPPOTrainer):
                         config=self.config,
                     )
 
-                ##### A very different setting, just here for testing: Can I normalize the advantages to have a mean of 0?
                 if self.config.algorithm.adv_estimator == AdvantageEstimator.GRPO and self.config.grpo_advantage_length_weight:
                     response_mask = batch.batch["response_mask"]
                     advantages = batch.batch["advantages"]
@@ -1204,7 +1066,6 @@ class RayAgentTrainer(VerlRayPPOTrainer):
                 rollout_data_dir = self.config.trainer.get("rollout_data_dir", None)
                 if rollout_data_dir:
                     with _timer("dump_rollout_generations", timing_raw):
-                        print(batch.batch.keys())
                         inputs = self.tokenizer.batch_decode(batch.batch["prompts"], skip_special_tokens=True)
                         outputs = self.tokenizer.batch_decode(batch.batch["responses"], skip_special_tokens=True)
                         scores = batch.batch["token_level_scores"].sum(-1).cpu().tolist()
@@ -1216,9 +1077,16 @@ class RayAgentTrainer(VerlRayPPOTrainer):
                             dump_path=rollout_data_dir,
                         )
 
+                self._maintain_skill_memory()
+
                 # validate
                 if self.val_reward_fn is not None and self.config.trainer.test_freq > 0 and (is_last_step or self.global_steps % self.config.trainer.test_freq == 0):
                     with _timer("testing", timing_raw):
+                        # Validation reloads the read-only memory snapshot.
+                        train_manager = getattr(self.agent_proxy, 'train_es_manager', None)
+                        if train_manager is not None:
+                            train_manager.save_skill_memory()
+                            self.agent_proxy.val_es_manager.enable_validation_skill_memory_reload()
                         val_metrics: dict = self._validate()
                         if is_last_step:
                             last_val_metrics = val_metrics
@@ -1227,9 +1095,8 @@ class RayAgentTrainer(VerlRayPPOTrainer):
                 if self.config.trainer.save_freq > 0 and (is_last_step or self.global_steps % self.config.trainer.save_freq == 0):
                     with _timer("save_checkpoint", timing_raw):
                         self._save_checkpoint()
-                        # Also save elite pool if enabled
                         if hasattr(self.agent_proxy, 'train_es_manager') and self.agent_proxy.train_es_manager is not None:
-                            self.agent_proxy.train_es_manager.save_elite_pool()
+                            self.agent_proxy.train_es_manager.save_skill_memory()
 
             # collect metrics
             metrics.update(compute_data_metrics(batch=batch, use_critic=self.use_critic))

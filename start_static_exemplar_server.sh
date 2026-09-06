@@ -1,33 +1,19 @@
 #!/bin/bash
-#
 # Start Static Exemplar Memory Server (MolMem)
-#
-# This script starts the Static Exemplar Memory retrieval server.
-# Before running, prepare the required data files (see README for details).
-#
 # Usage:
 #   bash start_static_exemplar_server.sh [OPTIONS]
-#
-# Examples:
-#   # Start with defaults
-#   bash start_static_exemplar_server.sh
-#
-#   # Custom port
-#   bash start_static_exemplar_server.sh --port 8001
-#
 
-set -e  # Exit on error
+set -e
 
-# Configuration - Update these paths to your data files
 DATA_DIR="./retriever_data"
 INDEX_PATH="${DATA_DIR}/molecular_faiss.index"
 METADATA_PATH="${DATA_DIR}/molecular_metadata.pkl"
 CORPUS_PATH="${DATA_DIR}/molecular_corpus.jsonl"
 PORT=8000
-NPROBE=800  # Optimized nprobe value for IndexIVFFlat
-RETRIEVER_GPU=0  # GPU for retrieval (set to available GPU)
+NPROBE=800
+RETRIEVER_GPU=0
+PYTHON_BIN="${RETRIEVER_PYTHON:-python}"
 
-# Parse command line arguments
 while [[ $# -gt 0 ]]; do
     case $1 in
         --port)
@@ -68,7 +54,6 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# Check if required files exist
 if [ ! -f "$INDEX_PATH" ]; then
     echo "Error: Index file not found: $INDEX_PATH"
     echo "Please prepare data files first. See README for instructions."
@@ -94,14 +79,19 @@ echo "Corpus: $CORPUS_PATH"
 echo "Port: $PORT"
 echo "nprobe: $NPROBE"
 echo "GPU: $RETRIEVER_GPU"
+echo "Python: $PYTHON_BIN"
 echo "================================================================================"
 echo ""
 
-# Set GPU for retrieval service
 export CUDA_VISIBLE_DEVICES="$RETRIEVER_GPU"
 
-# Start the server with GPU acceleration
-python retrieval/server/static_exemplar_memory.py \
+if ! "$PYTHON_BIN" -c 'import faiss, sys; n = faiss.get_num_gpus() if hasattr(faiss, "get_num_gpus") else 0; ok = n > 0 and hasattr(faiss, "StandardGpuResources"); print("FAISS {}; visible GPUs: {}".format(getattr(faiss, "__version__", "unknown"), n)); sys.exit(0 if ok else 1)'; then
+    echo "Error: --faiss_gpu requires a working FAISS-GPU build, but none is available."
+    echo "See retrieval/FAISS_GPU.md. faiss-cpu is not sufficient."
+    exit 1
+fi
+
+"$PYTHON_BIN" retrieval/server/static_exemplar_memory.py \
     --index_path "$INDEX_PATH" \
     --metadata_path "$METADATA_PATH" \
     --corpus_path "$CORPUS_PATH" \

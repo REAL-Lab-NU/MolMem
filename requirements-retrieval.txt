@@ -1,0 +1,7 @@
+# Install a GPU-enabled FAISS separately; see retrieval/FAISS_GPU.md.
+# faiss-cpu is intentionally excluded because MolMem launches with --faiss_gpu.
+datasets==2.19.2
+fastapi==0.115.0
+numpy==1.26.4
+rdkit==2023.9.6
+uvicorn==0.30.6

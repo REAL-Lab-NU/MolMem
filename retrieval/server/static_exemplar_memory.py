@@ -21,14 +21,14 @@ Usage:
 """
 
 import argparse
+import copy
 import pickle
 import json
 import logging
-import warnings
-from typing import List, Dict, Optional
+from typing import Any, Dict, List, Literal, Optional
 from pathlib import Path
 from multiprocessing import Pool, cpu_count
-from functools import partial, lru_cache
+from functools import lru_cache
 
 import numpy as np
 import faiss
@@ -46,6 +46,25 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+
+def _mol_from_smiles_compat(smiles: str):
+    """Parse SMILES, tolerating records that fail only RDKit kekulization."""
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is not None:
+        return mol
+    mol = Chem.MolFromSmiles(smiles, sanitize=False)
+    if mol is None:
+        return None
+    sanitize_without_kekulization = (
+        Chem.SanitizeFlags.SANITIZE_ALL ^ Chem.SanitizeFlags.SANITIZE_KEKULIZE
+    )
+    result = Chem.SanitizeMol(
+        mol,
+        sanitizeOps=sanitize_without_kekulization,
+        catchErrors=True,
+    )
+    return mol if result == Chem.SanitizeFlags.SANITIZE_NONE else None
 
 
 def load_corpus(corpus_path: str, use_dict: bool = True):
@@ -159,7 +178,7 @@ class MolecularFingerprinter:
         # Cache miss - compute fingerprint
         self._cache_misses += 1
 
-        mol = Chem.MolFromSmiles(smiles)
+        mol = _mol_from_smiles_compat(smiles)
         if mol is None:
             # Invalid SMILES: log warning and return zero vector
             logger.warning(f"Invalid SMILES string: {smiles}")
@@ -183,15 +202,6 @@ class MolecularFingerprinter:
 
         return arr
 
-    def batch_smiles_to_fingerprints(self, smiles_list: List[str]) -> np.ndarray:
-        """Convert batch of SMILES to fingerprints"""
-        fingerprints = []
-        for smiles in smiles_list:
-            fp = self.smiles_to_fingerprint(smiles)
-            fingerprints.append(fp)
-        return np.vstack(fingerprints)
-
-
 def _compute_single_tanimoto(args):
     """
     Helper function for parallel Tanimoto computation.
@@ -205,7 +215,7 @@ def _compute_single_tanimoto(args):
     """
     query_fp_bits, candidate_smiles, radius, n_bits = args
 
-    mol = Chem.MolFromSmiles(candidate_smiles)
+    mol = _mol_from_smiles_compat(candidate_smiles)
     if mol is None:
         return 0.0
 
@@ -220,31 +230,7 @@ def _compute_single_tanimoto(args):
     return DataStructs.TanimotoSimilarity(query_fp, candidate_fp)
 
 
-class BaseRetriever:
-    """Base retriever class for Search-R1 compatibility"""
-
-    def __init__(self, config):
-        self.config = config
-        self.retrieval_method = config.retrieval_method
-        self.topk = config.retrieval_topk
-
-        self.index_path = config.index_path
-        self.corpus_path = config.corpus_path
-
-    def _search(self, query: str, num: int, return_score: bool, **kwargs):
-        raise NotImplementedError
-
-    def _batch_search(self, query_list: List[str], num: int, return_score: bool, **kwargs):
-        raise NotImplementedError
-
-    def search(self, query: str, num: int = None, return_score: bool = False, **kwargs):
-        return self._search(query, num, return_score, **kwargs)
-
-    def batch_search(self, query_list: List[str], num: int = None, return_score: bool = False, **kwargs):
-        return self._batch_search(query_list, num, return_score, **kwargs)
-
-
-class StaticExemplarMemory(BaseRetriever):
+class StaticExemplarMemory:
     """
     Static Exemplar Memory for cold-start grounding in MolMem.
 
@@ -254,25 +240,20 @@ class StaticExemplarMemory(BaseRetriever):
     Features:
     - Fast similarity search via FAISS + Morgan fingerprints
     - Tanimoto similarity filtering (threshold ≥ 0.4)
-    - Property-aware retrieval (QED, LogP, SA, JNK3, DRD2, GSK3B)
-    - Compatible with Search-R1 API
-
+    - Property-aware retrieval (QED, LogP, SA, JNK3, DRD2)
     Query format: SMILES strings (e.g., "CCO", "CC(C)O")
     """
 
     def __init__(self, config):
-        super().__init__(config)
-
-        # Configuration
+        self.topk = config.retrieval_topk
+        self.index_path = config.index_path
+        self.corpus_path = config.corpus_path
         self.metadata_path = config.metadata_path
         self.similarity_threshold = config.similarity_threshold
         self.faiss_gpu = config.faiss_gpu
         self.radius = config.morgan_radius
         self.n_bits = config.morgan_nbits
-        self.faiss_threshold = config.faiss_threshold  # Optional: for fast filtering
-        # Performance tuning
-        self.search_multiplier_with_filter = config.search_multiplier_with_filter
-        self.search_multiplier_no_filter = config.search_multiplier_no_filter
+        self.search_multiplier = config.search_multiplier
         self.tanimoto_parallel_threshold = config.tanimoto_parallel_threshold
 
         # Load FAISS index
@@ -284,7 +265,14 @@ class StaticExemplarMemory(BaseRetriever):
             self.index.nprobe = config.nprobe
             print(f"✓ Set nprobe={config.nprobe} for IndexIVFFlat")
 
-        if self.faiss_gpu and faiss.get_num_gpus() > 0:
+        if self.faiss_gpu:
+            gpu_count = faiss.get_num_gpus() if hasattr(faiss, "get_num_gpus") else 0
+            if gpu_count <= 0 or not hasattr(faiss, "StandardGpuResources"):
+                raise RuntimeError(
+                    "--faiss_gpu was requested, but this Python environment has no "
+                    "usable FAISS-GPU device. Install a GPU-enabled FAISS build and "
+                    "verify faiss.get_num_gpus() > 0 before starting the server."
+                )
             print("Enabling GPU acceleration for FAISS...")
             # Use StandardGpuResources for explicit memory management
             self.gpu_resources = faiss.StandardGpuResources()
@@ -323,7 +311,7 @@ class StaticExemplarMemory(BaseRetriever):
         bit_counts_path = Path(self.index_path).parent / "molecular_bit_counts.npy"
 
         if binary_fp_path.exists() and bit_counts_path.exists():
-            print(f"Loading binary fingerprints for fast Tanimoto...")
+            print("Loading binary fingerprints for fast Tanimoto...")
             self.binary_fingerprints = np.load(str(binary_fp_path))
             self.bit_counts = np.load(str(bit_counts_path))
             self.use_stored_fingerprints = True
@@ -334,13 +322,9 @@ class StaticExemplarMemory(BaseRetriever):
             self.use_stored_fingerprints = False
             logger.warning("Binary fingerprints not found, using RDKit fallback")
 
-        print(f"✓ Molecular retriever initialized")
+        print("✓ Molecular retriever initialized")
         print(f"  - Fingerprint: Morgan (radius={self.radius}, bits={self.n_bits})")
         print(f"  - Tanimoto threshold: {self.similarity_threshold}")
-        if self.faiss_threshold:
-            print(f"  - FAISS threshold: {self.faiss_threshold:.4f} (auto-calculated, ~3-5x speedup)")
-        else:
-            print(f"  - FAISS threshold: None (disabled, use --enable-fast-filter for speedup)")
         print(f"  - FAISS GPU: {self.faiss_gpu}")
 
     def _calculate_true_tanimoto(self, query_smiles: str, candidate_smiles_list: List[str]) -> List[float]:
@@ -375,7 +359,7 @@ class StaticExemplarMemory(BaseRetriever):
         Returns:
             List of Tanimoto similarities (0-1 range)
         """
-        query_mol = Chem.MolFromSmiles(query_smiles)
+        query_mol = _mol_from_smiles_compat(query_smiles)
         if query_mol is None:
             return [0.0] * len(candidate_smiles_list)
 
@@ -383,7 +367,7 @@ class StaticExemplarMemory(BaseRetriever):
 
         tanimoto_scores = []
         for smiles in candidate_smiles_list:
-            mol = Chem.MolFromSmiles(smiles)
+            mol = _mol_from_smiles_compat(smiles)
             if mol is None:
                 tanimoto_scores.append(0.0)
                 continue
@@ -407,7 +391,7 @@ class StaticExemplarMemory(BaseRetriever):
         Returns:
             List of Tanimoto similarities (0-1 range)
         """
-        query_mol = Chem.MolFromSmiles(query_smiles)
+        query_mol = _mol_from_smiles_compat(query_smiles)
         if query_mol is None:
             return [0.0] * len(candidate_smiles_list)
 
@@ -470,7 +454,8 @@ class StaticExemplarMemory(BaseRetriever):
     def _search(self, query: str, original_smiles: str, num: int = None,
                return_score: bool = False, sort_by: str = None, descending: bool = True,
                similarity_threshold: float = None, original_property_value: float = None,
-               filter_better_only: bool = True, min_improvement_margin: float = 0.0):
+               filter_better_only: bool = True, min_improvement_margin: float = 0.0,
+               objectives: Optional[List[Dict[str, Any]]] = None):
         """
         Search for similar molecules with dual-molecule filtering.
 
@@ -486,6 +471,7 @@ class StaticExemplarMemory(BaseRetriever):
             similarity_threshold: Override default similarity threshold
             original_property_value: Original molecule's property value for filtering
             filter_better_only: Only return molecules with better property than original
+            objectives: Optional multi-objective filters and ranking specification
 
         Returns:
             results: List of document dictionaries
@@ -494,6 +480,33 @@ class StaticExemplarMemory(BaseRetriever):
         """
         if num is None:
             num = self.topk
+
+        objective_specs = list(objectives or [])
+        objective_names = set()
+        for spec in objective_specs:
+            required = {
+                'name', 'direction', 'weight', 'original_value',
+                'query_value', 'success_margin',
+            }
+            if not isinstance(spec, dict) or set(spec) != required:
+                raise ValueError("Each objective must contain exactly the supported fields")
+            name = str(spec['name'])
+            direction = str(spec['direction'])
+            if not name or name in objective_names:
+                raise ValueError("Objective names must be non-empty and unique")
+            if direction not in {'maximize', 'minimize'}:
+                raise ValueError(f"Unsupported objective direction: {direction}")
+            numeric_values = (
+                float(spec['weight']),
+                float(spec['original_value']),
+                float(spec['query_value']),
+                float(spec['success_margin']),
+            )
+            if not all(np.isfinite(value) for value in numeric_values):
+                raise ValueError("Objective values must be finite")
+            if numeric_values[0] <= 0 or numeric_values[3] < 0:
+                raise ValueError("Objective weight must be positive and margin non-negative")
+            objective_names.add(name)
 
         # Use provided threshold or default
         threshold = similarity_threshold if similarity_threshold is not None else self.similarity_threshold
@@ -506,33 +519,15 @@ class StaticExemplarMemory(BaseRetriever):
         # Also compute original molecule fingerprint for filtering
         original_fp = self.fingerprinter.smiles_to_fingerprint(original_smiles)
 
-        # Request many more candidates for filtering
-        if self.faiss_threshold is not None:
-            search_k = min(num * self.search_multiplier_with_filter, self.n_molecules)
-        else:
-            search_k = min(num * self.search_multiplier_no_filter, self.n_molecules)
-
-        faiss_scores, candidate_idxs = self.index.search(query_fp_for_search, k=search_k)
-        faiss_scores = faiss_scores[0]
+        # Request many more candidates before exact Tanimoto filtering.
+        search_k = min(num * self.search_multiplier, self.n_molecules)
+        _, candidate_idxs = self.index.search(query_fp_for_search, k=search_k)
         candidate_idxs = candidate_idxs[0]
 
-        # Step 2: Fast filtering with FAISS threshold (if available)
-        if self.faiss_threshold is not None:
-            mask = faiss_scores >= self.faiss_threshold
-            candidate_idxs = candidate_idxs[mask]
-            faiss_scores = faiss_scores[mask]
-
-            if len(candidate_idxs) == 0:
-                logger.warning(f'No molecules found with FAISS score >= {self.faiss_threshold}')
-                if return_score:
-                    return [], [], []
-                else:
-                    return []
-
-        # Step 3: Get candidate SMILES
+        # Step 2: Get candidate SMILES
         candidate_smiles = [self.smiles_list[idx] for idx in candidate_idxs]
 
-        # Step 4: Calculate Tanimoto similarity to ORIGINAL molecule (for filtering)
+        # Step 3: Calculate Tanimoto similarity to ORIGINAL molecule (for filtering)
         if self.use_stored_fingerprints:
             # Fast path: use stored binary fingerprints
             tanimoto_to_original = self._calculate_tanimoto_vectorized(
@@ -542,7 +537,7 @@ class StaticExemplarMemory(BaseRetriever):
             # Fallback: regenerate fingerprints from SMILES
             tanimoto_to_original = self._calculate_true_tanimoto(original_smiles, candidate_smiles)
 
-        # Step 5: Filter by Tanimoto threshold to ORIGINAL molecule AND property value
+        # Step 4: Filter by Tanimoto threshold to ORIGINAL molecule AND property value
         filtered_data = []
         for idx, smiles, sim_to_original in zip(candidate_idxs, candidate_smiles, tanimoto_to_original):
             if sim_to_original >= threshold:
@@ -559,15 +554,39 @@ class StaticExemplarMemory(BaseRetriever):
                             if prop_value >= original_property_value - min_improvement_margin:
                                 continue  # Skip - not enough improvement
                         else:
-                            # QED, LogP, JNK3, DRD2, GSK3B: higher is better - need to be at least margin bigger
+                            # QED, LogP, JNK3, and DRD2 use higher-is-better filtering.
                             if prop_value <= original_property_value + min_improvement_margin:
                                 continue  # Skip - not enough improvement
+
+                objective_score = None
+                if objective_specs:
+                    objective_score = 0.0
+                    objective_valid = True
+                    for spec in objective_specs:
+                        name = str(spec['name'])
+                        value = props.get(name)
+                        if value is None or not np.isfinite(float(value)):
+                            objective_valid = False
+                            break
+                        sign = -1.0 if spec['direction'] == 'minimize' else 1.0
+                        improvement_from_lead = sign * (
+                            float(value) - float(spec['original_value'])
+                        )
+                        if improvement_from_lead < float(spec['success_margin']):
+                            objective_valid = False
+                            break
+                        objective_score += float(spec['weight']) * sign * (
+                            float(value) - float(spec['query_value'])
+                        )
+                    if not objective_valid or objective_score <= 0.0:
+                        continue
 
                 filtered_data.append({
                     'idx': idx,
                     'smiles': smiles,
                     'similarity_to_original': sim_to_original,
-                    'properties': props
+                    'properties': props,
+                    'objective_score': objective_score,
                 })
 
         if len(filtered_data) == 0:
@@ -577,8 +596,12 @@ class StaticExemplarMemory(BaseRetriever):
             else:
                 return []
 
-        # Step 6: Sort by property or similarity to original
-        if sort_by and sort_by in ['qed', 'logp', 'sa', 'jnk3', 'drd2', 'gsk3b', 'molecular_weight']:
+        # Step 5: Sort by property or similarity to original
+        if objective_specs:
+            filtered_data.sort(
+                key=lambda item: item['objective_score'], reverse=True
+            )
+        elif sort_by and sort_by in ['qed', 'logp', 'sa', 'jnk3', 'drd2', 'molecular_weight']:
             filtered_data.sort(
                 key=lambda x: x['properties'].get(sort_by, -float('inf') if descending else float('inf')),
                 reverse=descending
@@ -587,13 +610,13 @@ class StaticExemplarMemory(BaseRetriever):
             # Sort by similarity to original (descending)
             filtered_data.sort(key=lambda x: x['similarity_to_original'], reverse=True)
 
-        # Step 7: Take top-k
+        # Step 6: Take top-k
         top_k_data = filtered_data[:num]
 
         if len(top_k_data) < num:
             logger.warning(f'Only {len(top_k_data)} molecules found (requested {num})')
 
-        # Step 8: Load documents and build rich results
+        # Step 7: Load documents and build rich results
         top_k_idxs = [item['idx'] for item in top_k_data]
         docs = load_docs(self.corpus, top_k_idxs)
 
@@ -619,7 +642,8 @@ class StaticExemplarMemory(BaseRetriever):
         similarity_threshold: float = None,
         original_property_value: float = None,
         filter_better_only: bool = True,
-        min_improvement_margin: float = 0.0
+        min_improvement_margin: float = 0.0,
+        objectives: Optional[List[Dict[str, Any]]] = None,
     ):
         """
         Batch search for multiple query SMILES with dual-molecule filtering.
@@ -675,7 +699,8 @@ class StaticExemplarMemory(BaseRetriever):
                 similarity_threshold=similarity_threshold,
                 original_property_value=original_property_value,
                 filter_better_only=filter_better_only,
-                min_improvement_margin=min_improvement_margin
+                min_improvement_margin=min_improvement_margin,
+                objectives=objectives,
             )
             all_results.append(query_results)
 
@@ -686,146 +711,21 @@ class StaticExemplarMemory(BaseRetriever):
 # FastAPI server
 #####################################
 
-@lru_cache(maxsize=8)  # Cache up to 8 different calibration files
-def load_calibration_thresholds(calibration_file: str = "faiss_tanimoto_calibration_piecewise.json") -> Optional[dict]:
-    """
-    Load FAISS threshold calibration from file with caching.
-
-    Results are cached to avoid re-reading the same file multiple times.
-    Cache size is limited to 8 entries to support multiple calibration files.
-
-    Args:
-        calibration_file: Path to calibration JSON file
-
-    Returns:
-        Dictionary mapping Tanimoto thresholds to FAISS thresholds, or None if loading fails
-    """
-    if not Path(calibration_file).exists():
-        logger.warning(f"Calibration file not found: {calibration_file}")
-        return None
-
-    try:
-        with open(calibration_file, 'r') as f:
-            calibration = json.load(f)
-    except json.JSONDecodeError as e:
-        logger.error(f"Failed to parse calibration file {calibration_file}: {e}")
-        return None
-    except Exception as e:
-        logger.error(f"Unexpected error loading calibration file {calibration_file}: {e}")
-        return None
-
-    # Extract threshold mapping
-    thresholds = calibration.get('thresholds', {})
-    if not thresholds:
-        logger.warning(f"No thresholds found in calibration file: {calibration_file}")
-        return None
-
-    logger.info(f"Loaded calibration thresholds for {len(thresholds)} Tanimoto values: {list(thresholds.keys())}")
-    return thresholds
-
-
-def get_faiss_threshold_for_tanimoto(tanimoto_threshold: float, calibration_file: str) -> Optional[float]:
-    """
-    Auto-calculate FAISS threshold based on Tanimoto threshold using calibration data.
-
-    Supports both exact matches and linear interpolation for intermediate values.
-    For example, if calibration has 0.4 and 0.5, requesting 0.45 will interpolate.
-
-    Args:
-        tanimoto_threshold: Target Tanimoto threshold (0-1 range)
-        calibration_file: Path to calibration JSON file
-
-    Returns:
-        Corresponding FAISS threshold, or None if calibration not available
-
-    Raises:
-        ValueError: If tanimoto_threshold is outside valid range [0, 1]
-    """
-    # Validate input
-    if not 0.0 <= tanimoto_threshold <= 1.0:
-        raise ValueError(f"tanimoto_threshold must be in [0, 1], got {tanimoto_threshold}")
-
-    thresholds = load_calibration_thresholds(calibration_file)
-    if not thresholds:
-        return None
-
-    # Look up threshold (convert to string key for exact match)
-    threshold_key = str(tanimoto_threshold)
-    if threshold_key in thresholds:
-        # Exact match: use piecewise model result (most accurate)
-        faiss_threshold = thresholds[threshold_key].get('faiss_threshold_piecewise')
-        logger.info(f"Exact match: Tanimoto {tanimoto_threshold} → FAISS {faiss_threshold:.4f}")
-        return faiss_threshold
-
-    # No exact match: try linear interpolation
-    available_thresholds = sorted([float(k) for k in thresholds.keys()])
-
-    if tanimoto_threshold < min(available_thresholds):
-        # Below calibrated range: use nearest (lowest)
-        nearest = min(available_thresholds)
-        faiss_threshold = thresholds[str(nearest)].get('faiss_threshold_piecewise')
-        logger.warning(
-            f"Tanimoto threshold {tanimoto_threshold} is below calibrated range "
-            f"[{min(available_thresholds)}, {max(available_thresholds)}]. "
-            f"Using nearest threshold {nearest} → FAISS {faiss_threshold:.4f}"
-        )
-        return faiss_threshold
-
-    if tanimoto_threshold > max(available_thresholds):
-        # Above calibrated range: use nearest (highest)
-        nearest = max(available_thresholds)
-        faiss_threshold = thresholds[str(nearest)].get('faiss_threshold_piecewise')
-        logger.warning(
-            f"Tanimoto threshold {tanimoto_threshold} is above calibrated range "
-            f"[{min(available_thresholds)}, {max(available_thresholds)}]. "
-            f"Using nearest threshold {nearest} → FAISS {faiss_threshold:.4f}"
-        )
-        return faiss_threshold
-
-    # Within calibrated range: linear interpolation
-    for i in range(len(available_thresholds) - 1):
-        lower = available_thresholds[i]
-        upper = available_thresholds[i + 1]
-
-        if lower <= tanimoto_threshold <= upper:
-            lower_faiss = thresholds[str(lower)].get('faiss_threshold_piecewise')
-            upper_faiss = thresholds[str(upper)].get('faiss_threshold_piecewise')
-
-            # Linear interpolation
-            weight = (tanimoto_threshold - lower) / (upper - lower)
-            interpolated = lower_faiss + weight * (upper_faiss - lower_faiss)
-
-            logger.info(
-                f"Interpolated: Tanimoto {tanimoto_threshold} "
-                f"(between {lower} and {upper}) → FAISS {interpolated:.4f}"
-            )
-            return interpolated
-
-    # Should not reach here
-    logger.error(f"Failed to find threshold for {tanimoto_threshold}")
-    return None
-
-
 class Config:
     """Configuration for molecular retrieval server"""
 
     def __init__(
         self,
-        retrieval_method: str = "molecular",
         retrieval_topk: int = 10,
         index_path: str = "molecular_faiss.index",
         metadata_path: str = "molecular_metadata.pkl",
         corpus_path: str = "molecular_corpus.jsonl",
         similarity_threshold: float = 0.4,
-        enable_fast_filter: bool = False,  # Enable FAISS threshold pre-filtering
-        calibration_file: str = "faiss_tanimoto_calibration_piecewise.json",
-        nprobe: int = 500,  # Optimized: Binary IVF nlist=16730, 73.5% success rate, 9.82ms latency
+        nprobe: int = 800,
         morgan_radius: int = 2,
         morgan_nbits: int = 2048,
         faiss_gpu: bool = False,
-        # Performance tuning parameters
-        search_multiplier_with_filter: int = 500,  # Search k multiplier when fast filter is enabled
-        search_multiplier_no_filter: int = 40,  # Search k multiplier when fast filter is disabled (max 40 for GPU 2048 limit)
+        search_multiplier: int = 40,
         tanimoto_parallel_threshold: int = 1000  # Use parallel computation when candidates > this threshold
     ):
         # Validate file paths
@@ -845,40 +745,28 @@ class Config:
                 f"Very low similarity threshold {similarity_threshold} may return too many results and slow down search"
             )
 
-        self.retrieval_method = retrieval_method
         self.retrieval_topk = retrieval_topk
         self.index_path = index_path
         self.metadata_path = metadata_path
         self.corpus_path = corpus_path
         self.similarity_threshold = similarity_threshold
-        self.enable_fast_filter = enable_fast_filter
-        self.calibration_file = calibration_file
         self.nprobe = nprobe
         self.morgan_radius = morgan_radius
         self.morgan_nbits = morgan_nbits
         self.faiss_gpu = faiss_gpu
-        # Performance tuning
-        self.search_multiplier_with_filter = search_multiplier_with_filter
-        self.search_multiplier_no_filter = search_multiplier_no_filter
+        self.search_multiplier = search_multiplier
         self.tanimoto_parallel_threshold = tanimoto_parallel_threshold
 
-        # Auto-calculate FAISS threshold if fast filter is enabled
-        if self.enable_fast_filter:
-            self.faiss_threshold = get_faiss_threshold_for_tanimoto(
-                similarity_threshold, calibration_file
-            )
-            if self.faiss_threshold is None:
-                # Fast filter was explicitly requested but calibration unavailable
-                # Raise error instead of silently disabling
-                raise FileNotFoundError(
-                    f"Fast filter enabled but calibration unavailable.\n"
-                    f"Options:\n"
-                    f"  1. Disable fast filter: remove --enable-fast-filter flag\n"
-                    f"  2. Generate calibration: python calibrate_faiss_tanimoto_piecewise.py --load-pairs calibration_pairs_100k.pkl\n"
-                    f"  3. Place calibration file at: {calibration_file}"
-                )
-        else:
-            self.faiss_threshold = None
+
+class ObjectiveSpec(BaseModel):
+    """One property in a joint multi-objective retrieval request."""
+
+    name: str
+    direction: Literal['maximize', 'minimize']
+    weight: float
+    original_value: float
+    query_value: float
+    success_margin: float
 
 
 class QueryRequest(BaseModel):
@@ -891,8 +779,9 @@ class QueryRequest(BaseModel):
     min_improvement_margin: float = 0.0  # Minimum improvement required over original property value
     topk: Optional[int] = None
     return_scores: bool = False
-    sort_by: Optional[str] = None  # "qed", "logp", "sa", "jnk3", "drd2", "gsk3b"
+    sort_by: Optional[str] = None
     descending: bool = True  # True for max (QED↑), False for min (LogP↓)
+    objectives: Optional[List[ObjectiveSpec]] = None
 
 
 app = FastAPI()
@@ -900,6 +789,47 @@ app = FastAPI()
 # Global variables (initialized in main block)
 config = None
 retriever = None
+
+
+@lru_cache(maxsize=4096)
+def _cached_batch_search(
+    query_list: tuple,
+    original_smiles_list: tuple,
+    num: int,
+    sort_by: Optional[str],
+    descending: bool,
+    similarity_threshold: Optional[float],
+    original_property_value: Optional[float],
+    filter_better_only: bool,
+    min_improvement_margin: float,
+    objective_specs: tuple,
+):
+    """Cache complete static-retrieval results for identical requests."""
+    if retriever is None:
+        raise RuntimeError("Server not initialized. Please run as main script.")
+
+    return retriever._batch_search(
+        query_list=list(query_list),
+        original_smiles_list=list(original_smiles_list),
+        num=num,
+        sort_by=sort_by,
+        descending=descending,
+        similarity_threshold=similarity_threshold,
+        original_property_value=original_property_value,
+        filter_better_only=filter_better_only,
+        min_improvement_margin=min_improvement_margin,
+        objectives=[
+            {
+                'name': item[0],
+                'direction': item[1],
+                'weight': item[2],
+                'original_value': item[3],
+                'query_value': item[4],
+                'success_margin': item[5],
+            }
+            for item in objective_specs
+        ],
+    )
 
 
 @app.post("/retrieve")
@@ -916,7 +846,7 @@ def retrieve_endpoint(request: QueryRequest):
       "similarity_threshold": 0.4,             # Optional: override default threshold
       "topk": 10,
       "return_scores": true,
-      "sort_by": "qed",  # Optional: "qed", "logp", "sa", "jnk3", "drd2", "gsk3b"
+      "sort_by": "qed",
       "descending": true  # True for maximize (QED↑), False for minimize (LogP↓)
     }
 
@@ -946,21 +876,34 @@ def retrieve_endpoint(request: QueryRequest):
     if not request.topk:
         request.topk = config.retrieval_topk
 
-    # Perform batch retrieval with dual-molecule filtering
-    all_results = retriever._batch_search(
-        query_list=request.queries,
-        original_smiles_list=request.original_smiles,
+    objective_specs = tuple(sorted(
+        (
+            item.name,
+            item.direction,
+            float(item.weight),
+            float(item.original_value),
+            float(item.query_value),
+            float(item.success_margin),
+        )
+        for item in (request.objectives or [])
+    ))
+
+    all_results = _cached_batch_search(
+        query_list=tuple(request.queries),
+        original_smiles_list=tuple(request.original_smiles),
         num=request.topk,
         sort_by=request.sort_by,
         descending=request.descending,
         similarity_threshold=request.similarity_threshold,
         original_property_value=request.original_property_value,
         filter_better_only=request.filter_better_only,
-        min_improvement_margin=request.min_improvement_margin
+        min_improvement_margin=request.min_improvement_margin,
+        objective_specs=objective_specs,
     )
 
     # Format response - each result contains document, similarity_to_original, and properties
-    return {"result": all_results}
+    # Keep response serialization from mutating the cached value.
+    return {"result": copy.deepcopy(all_results)}
 
 
 @app.get("/cache_stats")
@@ -984,8 +927,20 @@ def cache_stats_endpoint():
 
     fp_stats = retriever.fingerprinter.get_cache_stats()
 
+    result_cache = _cached_batch_search.cache_info()
     return {
-        "fingerprint_cache": fp_stats
+        "fingerprint_cache": fp_stats,
+        "retrieval_result_cache": {
+            "hits": result_cache.hits,
+            "misses": result_cache.misses,
+            "hit_rate": (
+                result_cache.hits / (result_cache.hits + result_cache.misses)
+                if result_cache.hits + result_cache.misses > 0
+                else 0.0
+            ),
+            "cache_size": result_cache.currsize,
+            "max_cache_size": result_cache.maxsize,
+        },
     }
 
 
@@ -996,6 +951,7 @@ def clear_cache_endpoint():
         raise RuntimeError("Server not initialized. Please run as main script.")
 
     retriever.fingerprinter.clear_cache()
+    _cached_batch_search.cache_clear()
 
     return {"status": "success", "message": "All caches cleared"}
 
@@ -1007,19 +963,19 @@ if __name__ == "__main__":
         epilog="""
 Examples:
   # Basic usage
-  python molecular_retrieval_server.py
+  python retrieval/server/static_exemplar_memory.py
 
   # Custom paths
-  python molecular_retrieval_server.py \\
+  python retrieval/server/static_exemplar_memory.py \\
       --index_path path/to/index.index \\
       --metadata_path path/to/metadata.pkl \\
       --corpus_path path/to/corpus.jsonl
 
   # With GPU acceleration
-  python molecular_retrieval_server.py --faiss_gpu
+  python retrieval/server/static_exemplar_memory.py --faiss_gpu
 
   # Custom port and threshold
-  python molecular_retrieval_server.py --port 8001 --threshold 0.5
+  python retrieval/server/static_exemplar_memory.py --port 8001 --threshold 0.5
         """
     )
 
@@ -1059,23 +1015,10 @@ Examples:
     )
 
     parser.add_argument(
-        "--enable-fast-filter",
-        action="store_true",
-        help="Enable FAISS threshold pre-filtering for 3-5x speedup (requires calibration file)"
-    )
-
-    parser.add_argument(
-        "--calibration-file",
-        type=str,
-        default="faiss_tanimoto_calibration_piecewise.json",
-        help="Calibration file for auto FAISS threshold calculation"
-    )
-
-    parser.add_argument(
         "--nprobe",
         type=int,
-        default=3,
-        help="Number of clusters to search for IndexIVFFlat (default: 3, optimal from testing)"
+        default=800,
+        help="Number of clusters to search for IndexIVFFlat (default: 800)"
     )
 
     parser.add_argument(
@@ -1102,14 +1045,11 @@ Examples:
 
     # Build config (file paths are validated in Config.__init__)
     config = Config(
-        retrieval_method="molecular",
         index_path=args.index_path,
         metadata_path=args.metadata_path,
         corpus_path=args.corpus_path,
         retrieval_topk=args.topk,
         similarity_threshold=args.threshold,
-        enable_fast_filter=args.enable_fast_filter,
-        calibration_file=args.calibration_file,
         nprobe=args.nprobe,
         morgan_radius=2,
         morgan_nbits=2048,

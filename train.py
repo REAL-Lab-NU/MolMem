@@ -10,10 +10,8 @@ import hydra
 import os
 from verl import DataProto
 import torch
-import numpy as np
 from ragen.utils import register_resolvers
 register_resolvers()
-import sys
 
 
 if not ray.is_initialized():
@@ -23,7 +21,6 @@ if not ray.is_initialized():
             'TOKENIZERS_PARALLELISM': 'true',
             'NCCL_DEBUG': 'WARN',
             'VLLM_LOGGING_LEVEL': 'WARN',
-            "RAY_DEBUG": "legacy" # used here for simpler breakpoint()
         }
     }) 
 
@@ -46,13 +43,12 @@ class DummyRewardManager():
             if return_dict:
                 return {
                     "reward_tensor": data.batch['rm_scores'],
+                    "reward_extra_info": {},
                 }
             else:
                 return data.batch['rm_scores']
 
         reward_tensor = torch.zeros_like(data.batch['responses'], dtype=torch.float32)
-
-        all_scores = []
 
         already_print_data_sources = {}
 
@@ -78,7 +74,6 @@ class DummyRewardManager():
             score = float(score)
  
             reward_tensor[i, valid_response_length - 1] = score
-            all_scores.append(score)
 
             # Get data_source from data_item if available, otherwise use a default value
             data_source = data_item.non_tensor_batch.get('data_source', 'default')
@@ -90,16 +85,10 @@ class DummyRewardManager():
                 already_print_data_sources[data_source] += 1
                 print(sequences_str)
         
-        print(f"[DEBUG] all_scores: {all_scores}")
-        print(f"[DEBUG] all_scores shape: {np.array(all_scores).shape}")
-        print(f"[DEBUG] all_scores mean: {np.mean(all_scores)}")
-        print(f"[DEBUG] all_scores max: {np.max(all_scores)}")
-        print(f"[DEBUG] all_scores min: {np.min(all_scores)}")
-        print(f"[DEBUG] all_scores std: {np.std(all_scores)}")
-
         if return_dict:
             return {
                 "reward_tensor": reward_tensor,
+                "reward_extra_info": {},
             }
         else:
             return reward_tensor
@@ -211,7 +200,6 @@ def run_ppo(config) -> None:
                 'TOKENIZERS_PARALLELISM': 'true',
                 'NCCL_DEBUG': 'WARN',
                 'VLLM_LOGGING_LEVEL': 'WARN',
-                "RAY_DEBUG": "legacy" # used here for simpler breakpoint()
             }
         })
 
@@ -224,8 +212,6 @@ class TaskRunner:
 
     def run(self, config):
         from verl.utils.fs import copy_to_local
-        # print initial config
-        from pprint import pprint
 
         # download the checkpoint from hdfs
         local_path = copy_to_local(config.actor_rollout_ref.model.path)
@@ -242,31 +228,18 @@ class TaskRunner:
             from verl.single_controller.ray import RayWorkerGroup
             ray_worker_group_cls = RayWorkerGroup
 
-        # elif config.actor_rollout_ref.actor.strategy == 'megatron':
-        #     assert  config.actor_rollout_ref.actor.strategy == config.critic.strategy
-        #     from verl.workers.megatron_workers import ActorRolloutRefWorker, CriticWorker
-        #     from verl.single_controller.ray.megatron import NVMegatronRayWorkerGroup
-        #     ray_worker_group_cls = NVMegatronRayWorkerGroup
-
         else:
             raise NotImplementedError
 
         from verl.trainer.ppo.ray_trainer import ResourcePoolManager, Role
 
-        # role_worker_mapping = {
-        #     Role.ActorRollout: ray.remote(ActorRolloutRefWorker),
-        #     Role.Critic: ray.remote(CriticWorker),
-        #     Role.RefPolicy: ray.remote(ActorRolloutRefWorker)
-        # }
         role_worker_mapping = {
             Role.ActorRollout: ray.remote(ActorRolloutRefWorker),
             Role.Critic: ray.remote(CriticWorker),
         }
         if config.actor_rollout_ref.actor.use_ref:
-            print("[DEBUG] using ref policy")
             role_worker_mapping[Role.RefPolicy] = ray.remote(ActorRolloutRefWorker)
         else:
-            print("[DEBUG] not using ref policy, setting use_kl_loss to False")
             config.actor_rollout_ref.actor.use_kl_loss = False
         global_pool_id = 'global_pool'
         resource_pool_spec = {
@@ -301,19 +274,8 @@ class TaskRunner:
             role_worker_mapping[Role.RewardModel] = ray.remote(RewardModelWorker)
             mapping[Role.RewardModel] = global_pool_id
 
-        # reward_manager_name = config.reward_model.get("reward_manager", "dummy")
-        # print(f'reward_manager_name: {reward_manager_name}')
-        # if reward_manager_name == 'dummy':
         print("using dummy reward manager")
         reward_manager_cls = DummyRewardManager
-        # elif reward_manager_name == 'naive':
-        #     from verl.workers.reward_manager import NaiveRewardManager
-        #     reward_manager_cls = NaiveRewardManager
-        # elif reward_manager_name == 'prime':
-        #     from verl.workers.reward_manager import PrimeRewardManager
-        #     reward_manager_cls = PrimeRewardManager
-        # else:
-        #     raise NotImplementedError
 
         compute_score = get_custom_reward_fn(config)
         reward_fn = reward_manager_cls(tokenizer=tokenizer, num_examine=0, compute_score=compute_score)
